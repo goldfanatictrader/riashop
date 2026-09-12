@@ -57,3 +57,13 @@
 **Status:** V1 direction  
 **Decision:** No public signup; small operator authentication with persistent secure session.  
 **Note:** Exact implementation may use signed cookie/session, but must not add external identity complexity unless required.
+
+## D-014 — Stateless signed operator session
+**Status:** Chosen for Milestone 1
+**Decision:** Successful unlock creates an HMAC-signed, `HttpOnly`, `Secure`, `SameSite=Lax` cookie valid for 30 days. The operator passcode and signing secret are Wrangler secrets; no authentication table is added.
+**Reason:** This is the smallest server-authoritative design compatible with a single private operator and persistent app reopen. The in-memory login throttle is intentionally best-effort per Worker isolate; stronger globally durable throttling is deferred unless production risk requires it.
+
+## D-015 — Health verifies required storage bindings
+**Status:** Chosen for Milestone 0
+**Decision:** `/api/v1/health` executes `SELECT 1` through D1 and a one-object R2 list probe before returning `status: ok`.
+**Reason:** A successful response proves both required bindings work instead of only proving that the Worker process started.

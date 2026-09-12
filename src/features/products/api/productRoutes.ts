@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import type { Bindings } from "../../../worker";
 import type { Product } from "../types";
+import { parseOffsetCursor } from "../../../shared/pagination";
 
 interface ProductRow {
   id: string;
@@ -86,6 +87,10 @@ productRoutes.get("/", async (c) => {
   if (active === "invalid") {
     return c.json({ error: { code: "VALIDATION_ERROR", message: "Filter status barang tidak valid." } }, 400);
   }
+  const offset = parseOffsetCursor(c.req.query("cursor"));
+  if (offset === null) {
+    return c.json({ error: { code: "VALIDATION_ERROR", message: "Halaman barang tidak valid." } }, 400);
+  }
 
   const conditions: string[] = [];
   const values: (string | number)[] = [];
@@ -104,9 +109,14 @@ productRoutes.get("/", async (c) => {
   }
   const where = conditions.length ? ` WHERE ${conditions.join(" AND ")}` : "";
   const result = await c.env.DB.prepare(
-    `SELECT ${PRODUCT_COLUMNS} FROM products${where} ORDER BY is_active DESC, name COLLATE NOCASE ASC LIMIT 200`,
-  ).bind(...values).all<ProductRow>();
-  return c.json({ data: result.results.map(productFromRow), meta: { nextCursor: null } });
+    `SELECT ${PRODUCT_COLUMNS} FROM products${where}
+      ORDER BY is_active DESC, name COLLATE NOCASE ASC, id ASC LIMIT 51 OFFSET ?`,
+  ).bind(...values, offset).all<ProductRow>();
+  const hasMore = result.results.length > 50;
+  return c.json({
+    data: result.results.slice(0, 50).map(productFromRow),
+    meta: { nextCursor: hasMore ? String(offset + 50) : null },
+  });
 });
 
 productRoutes.post("/", async (c) => {

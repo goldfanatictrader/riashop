@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { amountInWords } from "./domain";
 import type { Bindings } from "../../worker";
+import { parseOffsetCursor } from "../../shared/pagination";
 
 type InvoiceEnv = { Bindings: Bindings };
 
@@ -96,9 +97,8 @@ invoiceRoutes.get("/api/v1/invoices", async (c) => {
   if (status && status !== "finalized" && status !== "cancelled") {
     return c.json(error("Status nota tidak valid."), 400);
   }
-  const rawCursor = c.req.query("cursor") ?? "0";
-  const offset = Number(rawCursor);
-  if (!Number.isSafeInteger(offset) || offset < 0) return c.json(error("Halaman nota tidak valid."), 400);
+  const offset = parseOffsetCursor(c.req.query("cursor"));
+  if (offset === null) return c.json(error("Halaman nota tidak valid."), 400);
 
   const conditions: string[] = [];
   const params: unknown[] = [];
@@ -113,7 +113,7 @@ invoiceRoutes.get("/api/v1/invoices", async (c) => {
   const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
   const result = await c.env.DB.prepare(`SELECT id, invoice_number, invoice_date,
     customer_name_snapshot, grand_total_rupiah, status
-    FROM invoices ${where} ORDER BY invoice_date DESC, created_at DESC LIMIT 31 OFFSET ?`)
+    FROM invoices ${where} ORDER BY invoice_date DESC, created_at DESC, id DESC LIMIT 31 OFFSET ?`)
     .bind(...params, offset).all<{
       id: string; invoice_number: string; invoice_date: string; customer_name_snapshot: string;
       grand_total_rupiah: number; status: "finalized" | "cancelled";

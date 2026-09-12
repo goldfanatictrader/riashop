@@ -3,8 +3,7 @@ import { productImageUrl } from "./productApi";
 import type { Product } from "./types";
 import { useProducts } from "./useProducts";
 import { EmptyState, Icon, Skeleton } from "../../app/Icons";
-
-const rupiah = new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 });
+import { formatRupiah } from "../../shared/currency";
 
 export function ProductPickerCard({ product, selected = false, onSelect }: {
   product: Product;
@@ -24,7 +23,7 @@ export function ProductPickerCard({ product, selected = false, onSelect }: {
       </span>
       <strong>{product.name}</strong>
       {product.variant && <span>{product.variant}</span>}
-      <b>{rupiah.format(product.priceRupiah)}</b>
+      <b className="money-value">{formatRupiah(product.priceRupiah)}</b>
       {selected && <em><Icon name="check" /> Dipilih</em>}
     </button>
   );

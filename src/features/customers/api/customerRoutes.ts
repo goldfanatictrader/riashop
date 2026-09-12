@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import type { Bindings } from "../../../worker";
 import type { Customer } from "../types";
+import { parseOffsetCursor } from "../../../shared/pagination";
 
 interface CustomerRow {
   id: string;
@@ -86,6 +87,8 @@ customerRoutes.get("/", async (c) => {
   const search = c.req.query("search")?.trim().slice(0, 100) ?? "";
   const active = parseActive(c.req.query("active"));
   if (active === "invalid") return c.json({ error: { code: "VALIDATION_ERROR", message: "Filter status customer tidak valid." } }, 400);
+  const offset = parseOffsetCursor(c.req.query("cursor"));
+  if (offset === null) return c.json({ error: { code: "VALIDATION_ERROR", message: "Halaman customer tidak valid." } }, 400);
   const conditions: string[] = [];
   const values: (string | number)[] = [];
   if (search) {
@@ -96,9 +99,14 @@ customerRoutes.get("/", async (c) => {
   if (active !== null) { conditions.push("is_active = ?"); values.push(active); }
   const where = conditions.length ? ` WHERE ${conditions.join(" AND ")}` : "";
   const result = await c.env.DB.prepare(
-    `SELECT ${CUSTOMER_COLUMNS} FROM customers${where} ORDER BY is_active DESC, name COLLATE NOCASE ASC LIMIT 200`,
-  ).bind(...values).all<CustomerRow>();
-  return c.json({ data: result.results.map(customerFromRow), meta: { nextCursor: null } });
+    `SELECT ${CUSTOMER_COLUMNS} FROM customers${where}
+      ORDER BY is_active DESC, name COLLATE NOCASE ASC, id ASC LIMIT 51 OFFSET ?`,
+  ).bind(...values, offset).all<CustomerRow>();
+  const hasMore = result.results.length > 50;
+  return c.json({
+    data: result.results.slice(0, 50).map(customerFromRow),
+    meta: { nextCursor: hasMore ? String(offset + 50) : null },
+  });
 });
 
 customerRoutes.post("/", async (c) => {

@@ -140,4 +140,32 @@ describe("integrasi finalisasi nota", () => {
     const retried = await finalize();
     await expect(retried.json()).resolves.toMatchObject({ data: { invoiceNumber: "RNS-202609-0001" } });
   });
+
+  it("memuat riwayat per 30 nota dan mencari di seluruh hasil", async () => {
+    const insert = database.prepare(`INSERT INTO invoices
+      (id, invoice_number, sequence_year_month, sequence_number, customer_id, customer_name_snapshot,
+       invoice_date, subtotal_rupiah, discount_rupiah, shipping_rupiah, grand_total_rupiah,
+       amount_in_words, status, created_at, updated_at)
+      VALUES (?, ?, '202609', ?, NULL, ?, '2026-09-12', 10000, 0, 0, 10000,
+       'Sepuluh Ribu Rupiah', 'finalized', ?, ?)`);
+    for (let index = 0; index < 31; index += 1) {
+      const createdAt = `2026-09-12T00:${String(index).padStart(2, "0")}:00.000Z`;
+      insert.run(`invoice-${String(index).padStart(2, "0")}`, `RNS-202609-${String(index + 1).padStart(4, "0")}`, index + 1,
+        index === 0 ? "Customer Khusus" : `Customer ${index}`, createdAt, createdAt);
+    }
+
+    const first = await invoiceRoutes.request("https://ria.test/api/v1/invoices", undefined, env);
+    const firstBody = await first.json() as { data: unknown[]; meta: { nextCursor: string | null } };
+    expect(firstBody.data).toHaveLength(30);
+    expect(firstBody.meta.nextCursor).toBe("30");
+
+    const second = await invoiceRoutes.request("https://ria.test/api/v1/invoices?cursor=30", undefined, env);
+    const secondBody = await second.json() as { data: unknown[]; meta: { nextCursor: string | null } };
+    expect(secondBody.data).toHaveLength(1);
+    expect(secondBody.meta.nextCursor).toBeNull();
+
+    const searched = await invoiceRoutes.request("https://ria.test/api/v1/invoices?search=Khusus", undefined, env);
+    await expect(searched.json()).resolves.toMatchObject({ data: [{ customerName: "Customer Khusus" }], meta: { nextCursor: null } });
+    expect((await invoiceRoutes.request("https://ria.test/api/v1/invoices?cursor=nope", undefined, env)).status).toBe(400);
+  });
 });

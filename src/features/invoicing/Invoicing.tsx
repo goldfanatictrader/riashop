@@ -1,10 +1,11 @@
 import { FormEvent, lazy, Suspense, useEffect, useMemo, useState } from "react";
 import {
-  archivePdf, cancelInvoice, createCustomer, finalizeInvoice, getInvoice, listCustomers, listInvoices, listProducts,
+  archivePdf, cancelInvoice, createCustomer, finalizeInvoice, getInvoice, listCustomers, listProducts,
 } from "./api";
 import type { FinalizedInvoice, InvoiceCustomer, InvoiceListItem, InvoiceProduct } from "./domain";
 import { calculateTotals, formatRupiah } from "./domain";
 import { EmptyState, Icon, Skeleton } from "../../app/Icons";
+import { useInvoiceHistory } from "./useInvoiceHistory";
 
 const DRAFT_KEY = "ria-noel-invoice-draft-v1";
 
@@ -148,7 +149,7 @@ function InvoiceEditor({ navigate }: { navigate: (route: string) => void }) {
                   <input aria-label={`Jumlah ${line.product.name}`} inputMode="decimal" type="number" min="0.01" step="1" value={line.quantity} onChange={(event) => changeQuantity(line.product.id, Number(event.target.value))} />
                   <button type="button" onClick={() => changeQuantity(line.product.id, line.quantity + 1)} aria-label={`Tambah ${line.product.name}`}><Icon name="plus" /></button>
                 </div>
-                <strong>{formatRupiah(line.product.priceRupiah * line.quantity)}</strong>
+                <strong className="money-value">{formatRupiah(line.product.priceRupiah * line.quantity)}</strong>
               </div>
               <button className="remove-button" type="button" onClick={() => setDraft((current) => ({ ...current, lines: current.lines.filter((item) => item.product.id !== line.product.id) }))}>Hapus barang</button>
             </article>
@@ -160,10 +161,10 @@ function InvoiceEditor({ navigate }: { navigate: (route: string) => void }) {
         <MoneyInput label="Ongkir (opsional)" value={draft.shippingRupiah} onChange={(value) => setDraft((current) => ({ ...current, shippingRupiah: value }))} />
       </section>
       <section className="invoice-summary" aria-label="Total nota">
-        <p><span>Subtotal</span><strong>{formatRupiah(totals.subtotalRupiah)}</strong></p>
-        {draft.discountRupiah > 0 && <p><span>Diskon</span><strong>−{formatRupiah(draft.discountRupiah)}</strong></p>}
-        {draft.shippingRupiah > 0 && <p><span>Ongkir</span><strong>{formatRupiah(draft.shippingRupiah)}</strong></p>}
-        <p className="grand-total"><span>Total</span><strong>{formatRupiah(totals.grandTotalRupiah)}</strong></p>
+        <p><span>Subtotal</span><strong className="money-value">{formatRupiah(totals.subtotalRupiah)}</strong></p>
+        {draft.discountRupiah > 0 && <p><span>Diskon</span><strong className="money-value">−{formatRupiah(draft.discountRupiah)}</strong></p>}
+        {draft.shippingRupiah > 0 && <p><span>Ongkir</span><strong className="money-value">{formatRupiah(draft.shippingRupiah)}</strong></p>}
+        <p className="grand-total"><span>Total</span><strong className="money-value">{formatRupiah(totals.grandTotalRupiah)}</strong></p>
       </section>
       {error && <div className="error-panel" role="alert"><p>{error}</p><button type="button" onClick={submit}>Coba Lagi</button></div>}
       <button className="button primary sticky-action icon-button" type="button" disabled={submitting} onClick={submit}>{submitting ? "Membuat nota…" : <><Icon name="invoice" /> Buat PDF <Icon name="arrow" /></>}</button>
@@ -209,17 +210,17 @@ function InlineCustomerForm({ onCreated }: { onCreated: (customer: InvoiceCustom
 function ProductPicker({ selected, onSelect, onBack }: { selected: Set<string>; onSelect: (value: InvoiceProduct) => void; onBack: () => void }) {
   const [search, setSearch] = useState("");
   const products = useLoad(listProducts, search);
-  return <main className="app-shell"><PageHeader title="Pilih Barang" onBack={onBack} /><label htmlFor="product-search">Cari barang</label><input id="product-search" type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Nama, ukuran, atau kategori" />{products.loading && <Skeleton rows={4} />}{products.error && <ErrorRetry message={products.error} retry={products.reload} />}{!products.loading && !products.error && products.data?.length === 0 && <EmptyState icon="box">Belum ada barang. Tambahkan barang dari menu Daftar Barang.</EmptyState>}<div className="product-grid">{products.data?.map((product) => <button type="button" disabled={selected.has(product.id)} className={selected.has(product.id) ? "selected" : ""} key={product.id} onClick={() => onSelect(product)}>{product.imageUrl ? <img src={product.imageUrl} alt="" loading="lazy" decoding="async" /> : <span className="product-placeholder" aria-hidden="true"><Icon name="box" /></span>}<strong>{product.name}</strong><small>{product.variant || product.category || "Tanpa varian"}</small><b>{formatRupiah(product.priceRupiah)}/{product.unitLabel}</b><em>{selected.has(product.id) ? <><Icon name="check" /> Sudah dipilih</> : "Pilih barang"}</em></button>)}</div></main>;
+  return <main className="app-shell"><PageHeader title="Pilih Barang" onBack={onBack} /><label htmlFor="product-search">Cari barang</label><input id="product-search" type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Nama, ukuran, atau kategori" />{products.loading && <Skeleton rows={4} />}{products.error && <ErrorRetry message={products.error} retry={products.reload} />}{!products.loading && !products.error && products.data?.length === 0 && <EmptyState icon="box">Belum ada barang. Tambahkan barang dari menu Daftar Barang.</EmptyState>}<div className="product-grid">{products.data?.map((product) => <button type="button" disabled={selected.has(product.id)} className={selected.has(product.id) ? "selected" : ""} key={product.id} onClick={() => onSelect(product)}>{product.imageUrl ? <img src={product.imageUrl} alt="" loading="lazy" decoding="async" /> : <span className="product-placeholder" aria-hidden="true"><Icon name="box" /></span>}<strong>{product.name}</strong><small>{product.variant || product.category || "Tanpa varian"}</small><b className="money-value">{formatRupiah(product.priceRupiah)}/{product.unitLabel}</b><em>{selected.has(product.id) ? <><Icon name="check" /> Sudah dipilih</> : "Pilih barang"}</em></button>)}</div></main>;
 }
 
 function InvoiceHistory({ navigate }: { navigate: (route: string) => void }) {
   const [search, setSearch] = useState("");
-  const invoices = useLoad(listInvoices, search);
-  return <main className="app-shell"><PageHeader title="Nota Sebelumnya" onBack={() => navigate("/")} /><label htmlFor="invoice-search">Cari nota</label><input id="invoice-search" type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Nomor nota atau nama customer" />{invoices.loading && <Skeleton rows={4} />}{invoices.error && <ErrorRetry message={invoices.error} retry={invoices.reload} />}{!invoices.loading && !invoices.error && invoices.data?.length === 0 && <EmptyState icon="history">Belum ada nota penjualan. Nota yang selesai akan tersusun rapi di sini.</EmptyState>}<div className="history-list">{invoices.data?.map((invoice) => <InvoiceHistoryCard key={invoice.id} invoice={invoice} onClick={() => navigate(`/invoices/${invoice.id}`)} />)}</div></main>;
+  const history = useInvoiceHistory(search);
+  return <main className="app-shell"><PageHeader title="Nota Sebelumnya" onBack={() => navigate("/")} /><label htmlFor="invoice-search">Cari nota</label><input id="invoice-search" type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Nomor nota atau nama customer" />{history.loading && <Skeleton rows={4} />}{history.error && <ErrorRetry message={history.error} retry={history.reload} />}{!history.loading && !history.error && history.invoices.length === 0 && <EmptyState icon="history">Belum ada nota penjualan. Nota yang selesai akan tersusun rapi di sini.</EmptyState>}<div className="history-list">{history.invoices.map((invoice) => <InvoiceHistoryCard key={invoice.id} invoice={invoice} onClick={() => navigate(`/invoices/${invoice.id}`)} />)}</div>{history.nextCursor && <div className="list-pagination"><button className="secondary-button" type="button" disabled={history.loadingMore} onClick={() => void history.loadMore()}>{history.loadingMore ? "Memuat nota…" : "Muat lebih banyak"}</button></div>}</main>;
 }
 
 function InvoiceHistoryCard({ invoice, onClick }: { invoice: InvoiceListItem; onClick: () => void }) {
-  return <button type="button" onClick={onClick}><span><strong>{invoice.invoiceNumber}</strong><small>{invoice.customerName} · {invoice.invoiceDate.split("-").reverse().join("/")}</small></span><span><b>{formatRupiah(invoice.grandTotalRupiah)}</b><small>{invoice.status === "cancelled" ? "Dibatalkan" : "Selesai"}</small></span></button>;
+  return <button type="button" onClick={onClick}><span className="history-copy"><strong>{invoice.invoiceNumber}</strong><small>{invoice.customerName} · {invoice.invoiceDate.split("-").reverse().join("/")}</small></span><span className="history-amount"><b className="money-value">{formatRupiah(invoice.grandTotalRupiah)}</b><small>{invoice.status === "cancelled" ? "Dibatalkan" : "Selesai"}</small></span></button>;
 }
 
 function InvoiceDetail({ id, navigate }: { id: string; navigate: (route: string) => void }) {
@@ -240,7 +241,7 @@ function InvoiceDetail({ id, navigate }: { id: string; navigate: (route: string)
 }
 
 function InvoiceSnapshot({ invoice }: { invoice: FinalizedInvoice }) {
-  return <section className="detail-card"><p><span>Customer</span><strong>{invoice.customer.name}</strong></p><p><span>Tanggal</span><strong>{invoice.invoiceDate.split("-").reverse().join("/")}</strong></p><p><span>Status</span><strong>{invoice.status === "cancelled" ? "Dibatalkan" : "Selesai"}</strong></p><div className="detail-items">{invoice.items.map((item) => <p key={item.id}><span>{item.productName}<small>{item.quantity} {item.unitLabel} × {formatRupiah(item.unitPriceRupiah)}</small></span><strong>{formatRupiah(item.lineTotalRupiah)}</strong></p>)}</div><p className="grand-total"><span>Total</span><strong>{formatRupiah(invoice.grandTotalRupiah)}</strong></p><p className="words">{invoice.amountInWords}</p></section>;
+  return <section className="detail-card"><p><span>Customer</span><strong>{invoice.customer.name}</strong></p><p><span>Tanggal</span><strong>{invoice.invoiceDate.split("-").reverse().join("/")}</strong></p><p><span>Status</span><strong>{invoice.status === "cancelled" ? "Dibatalkan" : "Selesai"}</strong></p><div className="detail-items">{invoice.items.map((item) => <p key={item.id}><span>{item.productName}<small>{item.quantity} {item.unitLabel} × {formatRupiah(item.unitPriceRupiah)}</small></span><strong className="money-value">{formatRupiah(item.lineTotalRupiah)}</strong></p>)}</div><p className="grand-total"><span>Total</span><strong className="money-value">{formatRupiah(invoice.grandTotalRupiah)}</strong></p><p className="words">{invoice.amountInWords}</p></section>;
 }
 
 function InvoiceSuccess({ invoice, navigate }: { invoice: FinalizedInvoice; navigate: (route: string) => void }) {

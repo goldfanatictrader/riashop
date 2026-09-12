@@ -1,6 +1,8 @@
 import { Hono } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
+import { customerRoutes } from "./features/customers/api/customerRoutes";
 import { invoiceRoutes } from "./features/invoicing/server";
+import { productRoutes } from "./features/products/api/productRoutes";
 
 export interface Bindings {
   DB: D1Database;
@@ -205,6 +207,8 @@ app.post("/api/v1/auth/logout", (c) => {
 });
 
 app.route("/", invoiceRoutes);
+app.route("/api/v1/products", productRoutes);
+app.route("/api/v1/customers", customerRoutes);
 
 app.notFound((c) => {
   if (c.req.path.startsWith("/api/")) {

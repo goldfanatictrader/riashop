@@ -82,3 +82,13 @@
 **Status:** Chosen for Milestone 5
 **Decision:** The browser generates the PDF from the finalized snapshot, then attempts a server-mediated R2 archive. Archive failure never rolls back the finalized invoice; history can deterministically regenerate the file.
 **Reason:** This follows the locked failure policy while preserving a shareable local result during an R2/network problem.
+
+## D-019 — Product images use validated server-mediated uploads
+**Status:** Chosen for Milestone 2
+**Decision:** V1 accepts JPEG, PNG, or WebP product-image bodies up to 5 MB through the authenticated Worker. The Worker verifies the declared MIME against file signature bytes, creates an opaque R2 key under `products/{product-id}/`, and updates `image_key` only after the object upload succeeds. Replaced objects are removed best-effort after the new D1 reference is committed.
+**Reason:** This keeps object ownership server-authoritative and avoids direct-upload signing complexity while allowing normal phone photos. Preserving an accepted source format avoids server-side image conversion dependencies; client-side WebP compression remains preferred.
+
+## D-020 — Pickers own only transient picker state
+**Status:** Chosen for Milestones 2–3
+**Decision:** `ProductPicker` and `CustomerPicker` are reusable controlled components. Selection is returned to the embedding invoice editor through callbacks. Inline customer creation changes only picker-local form state and returns the newly persisted customer before closing; it does not navigate or own invoice draft state.
+**Reason:** The invoice editor is being built separately. Keeping draft ownership in its parent is the smallest reliable way to preserve selected items and amounts while creating a customer inline.

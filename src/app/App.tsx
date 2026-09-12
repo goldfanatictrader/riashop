@@ -1,7 +1,9 @@
 import { FormEvent, useEffect, useState } from "react";
+import { CustomerScreen } from "../features/customers/CustomerScreen";
 import { Invoicing, type InvoiceRoute } from "../features/invoicing/Invoicing";
+import { ProductScreen } from "../features/products/ProductScreen";
 
-type View = "loading" | "login" | "app";
+type View = "loading" | "login" | "app" | "products" | "customers";
 
 interface ApiError {
   error?: { message?: string };
@@ -124,6 +126,9 @@ export function App() {
     }
   }
 
+  if (view === "products") return <ProductScreen onBack={() => setView("app")} />;
+  if (view === "customers") return <CustomerScreen onBack={() => setView("app")} />;
+
   if (view === "loading") {
     return <main className="centered"><p className="status" role="status">Membuka Ria Noel Shop…</p></main>;
   }
@@ -179,7 +184,7 @@ export function App() {
             onClick={() => {
               if (action.key === "invoice") navigate("/invoice/new");
               else if (action.key === "history") navigate("/invoices");
-              else setMessage("Daftar Barang dikelola pada modul barang.");
+              else setView("products");
             }}
           >
             <span className="action-icon" aria-hidden="true">{action.icon}</span>
@@ -191,6 +196,9 @@ export function App() {
           </button>
         ))}
       </section>
+      <button className="customer-menu-button" type="button" onClick={() => setView("customers")}>
+        <strong>Daftar Customer</strong><span>Kelola nama dan nomor WhatsApp</span>
+      </button>
       {message && <p className="notice" role="status">{message}</p>}
       <p className="help">Pilih salah satu menu di atas untuk mulai bekerja.</p>
     </main></>

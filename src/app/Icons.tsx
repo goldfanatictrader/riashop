@@ -23,8 +23,8 @@ export function Icon({ name, ...props }: SVGProps<SVGSVGElement> & { name: IconN
   return <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>{paths[name]}</svg>;
 }
 
-export function Brand({ compact = false, reversed = false }: { compact?: boolean; reversed?: boolean }) {
-  return <div className={`brand${compact ? " compact" : ""}`}><img src={reversed ? "/brand/logo-reversed.svg" : "/brand/logo.svg"} alt="Ria Noel Shop" /></div>;
+export function Brand({ compact = false }: { compact?: boolean }) {
+  return <div className={`brand${compact ? " compact" : ""}`}><img src="/brand/logo.png" alt="Ria Noel Shop" /></div>;
 }
 
 export function Skeleton({ rows = 3 }: { rows?: number }) {

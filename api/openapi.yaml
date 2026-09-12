@@ -1,0 +1,146 @@
+openapi: 3.1.0
+info:
+  title: Ria Noel Shop Invoice API
+  version: 1.0.0
+servers:
+  - url: /api/v1
+paths:
+  /health:
+    get:
+      responses:
+        '200':
+          description: Healthy
+  /auth/login:
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [passcode]
+              properties:
+                passcode: { type: string }
+      responses:
+        '200': { description: Authenticated }
+        '401': { description: Invalid credentials }
+  /auth/logout:
+    post:
+      responses:
+        '204': { description: Logged out }
+  /auth/session:
+    get:
+      responses:
+        '200': { description: Session state }
+  /products:
+    get:
+      parameters:
+        - in: query
+          name: search
+          schema: { type: string }
+        - in: query
+          name: category
+          schema: { type: string }
+        - in: query
+          name: active
+          schema: { type: boolean }
+      responses:
+        '200': { description: Product list }
+    post:
+      responses:
+        '201': { description: Product created }
+  /products/{id}:
+    get:
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200': { description: Product }
+    patch:
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200': { description: Product updated }
+  /customers:
+    get:
+      parameters:
+        - in: query
+          name: search
+          schema: { type: string }
+      responses:
+        '200': { description: Customer list }
+    post:
+      responses:
+        '201': { description: Customer created }
+  /customers/{id}:
+    get:
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200': { description: Customer }
+    patch:
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200': { description: Customer updated }
+  /invoices:
+    get:
+      parameters:
+        - in: query
+          name: search
+          schema: { type: string }
+        - in: query
+          name: status
+          schema: { type: string, enum: [finalized, cancelled] }
+        - in: query
+          name: cursor
+          schema: { type: string }
+      responses:
+        '200': { description: Invoice list }
+  /invoices/finalize:
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FinalizeInvoiceRequest'
+      responses:
+        '201': { description: Finalized invoice snapshot }
+        '400': { description: Validation error }
+  /invoices/{id}:
+    get:
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200': { description: Invoice detail }
+  /invoices/{id}/cancel:
+    post:
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200': { description: Invoice cancelled }
+components:
+  parameters:
+    Id:
+      in: path
+      name: id
+      required: true
+      schema: { type: string }
+  schemas:
+    FinalizeInvoiceRequest:
+      type: object
+      required: [customerId, invoiceDate, items]
+      properties:
+        customerId: { type: string }
+        invoiceDate: { type: string, format: date }
+        discountRupiah: { type: integer, minimum: 0, default: 0 }
+        shippingRupiah: { type: integer, minimum: 0, default: 0 }
+        items:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [productId, quantity]
+            properties:
+              productId: { type: string }
+              quantity: { type: number, exclusiveMinimum: 0 }

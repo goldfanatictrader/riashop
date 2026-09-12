@@ -1,6 +1,16 @@
-import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib";
+import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFImage, type PDFPage } from "pdf-lib";
 import type { FinalizedInvoice } from "./domain";
 import { formatRupiah } from "./domain";
+
+async function embedLogo(pdf: PDFDocument): Promise<PDFImage | null> {
+  try {
+    const response = await fetch("/brand/logo-pdf.png");
+    if (!response.ok) return null;
+    return await pdf.embedPng(await response.arrayBuffer());
+  } catch {
+    return null;
+  }
+}
 
 const PAGE_WIDTH = 595.28;
 const PAGE_HEIGHT = 841.89;
@@ -46,18 +56,20 @@ function wrapText(text: string, font: PDFFont, size: number, maxWidth: number): 
   return lines.length ? lines : [""];
 }
 
-function drawHeader(page: PDFPage, regular: PDFFont, bold: PDFFont, invoice: FinalizedInvoice): number {
+function drawHeader(page: PDFPage, regular: PDFFont, bold: PDFFont, invoice: FinalizedInvoice, logo: PDFImage | null): number {
   page.drawRectangle({ x: 0, y: PAGE_HEIGHT - 124, width: PAGE_WIDTH, height: 124, color: CREAM });
-  page.drawSvgPath("M2 68C12 22 71 4 126 18C166 28 176 55 165 80C153 107 104 116 59 104C24 95 5 80 2 68", { x: MARGIN, y: PAGE_HEIGHT - 23, scale: .43, borderColor: GREEN, borderWidth: 5 });
-  page.drawSvgPath("M39 99L70 23L92 23C112 23 124 34 119 50C114 66 97 72 79 71L103 98M60 62L82 62C94 62 102 58 105 49", { x: MARGIN + 12, y: PAGE_HEIGHT - 15, scale: .43, borderColor: GREEN, borderWidth: 5 });
-  page.drawCircle({ x: MARGIN + 76, y: PAGE_HEIGHT - 58, size: 5, color: ORANGE });
-  page.drawText("RIA", { x: MARGIN + 87, y: PAGE_HEIGHT - 57, size: 15, font: bold, color: ORANGE });
-  page.drawText("NOEL SHOP", { x: MARGIN + 87, y: PAGE_HEIGHT - 74, size: 8, font: bold, color: RED });
-  page.drawText("PILIHAN BAIK, DIBUNGKUS RAPI", { x: MARGIN, y: PAGE_HEIGHT - 105, size: 6.8, font: bold, color: MUTED });
+  if (logo) {
+    page.drawImage(logo, { x: MARGIN - 4, y: PAGE_HEIGHT - 118, width: 138, height: 92 });
+  } else {
+    page.drawCircle({ x: MARGIN + 76, y: PAGE_HEIGHT - 58, size: 5, color: ORANGE });
+    page.drawText("RIA", { x: MARGIN + 87, y: PAGE_HEIGHT - 57, size: 15, font: bold, color: ORANGE });
+    page.drawText("NOEL SHOP", { x: MARGIN + 87, y: PAGE_HEIGHT - 74, size: 8, font: bold, color: RED });
+  }
   page.drawRectangle({ x: 329, y: PAGE_HEIGHT - 94, width: 220, height: 66, color: DEEP_GREEN });
   page.drawRectangle({ x: 329, y: PAGE_HEIGHT - 101, width: 68, height: 7, color: ORANGE });
   page.drawText("NOTA PENJUALAN", { x: 349, y: PAGE_HEIGHT - 55, size: 17, font: bold, color: rgb(1, 1, 1) });
   page.drawText(invoice.invoiceNumber, { x: 349, y: PAGE_HEIGHT - 75, size: 9, font: regular, color: rgb(.88, .94, .90) });
+  page.drawText("PILIHAN BAIK, DIBUNGKUS RAPI", { x: MARGIN, y: PAGE_HEIGHT - 136, size: 6.8, font: bold, color: MUTED });
   return PAGE_HEIGHT - 150;
 }
 
@@ -78,6 +90,7 @@ export async function generateInvoicePdf(invoice: FinalizedInvoice): Promise<Uin
   const pdf = await PDFDocument.create();
   const regular = await pdf.embedFont(StandardFonts.Helvetica);
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
+  const logo = await embedLogo(pdf);
   const fixedDate = new Date(invoice.createdAt);
   pdf.setTitle(`Nota ${invoice.invoiceNumber}`);
   pdf.setAuthor("Ria Noel Shop");
@@ -87,7 +100,7 @@ export async function generateInvoicePdf(invoice: FinalizedInvoice): Promise<Uin
   pdf.setModificationDate(fixedDate);
 
   let page = pdf.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
-  let y = drawHeader(page, regular, bold, invoice);
+  let y = drawHeader(page, regular, bold, invoice, logo);
   page.drawRectangle({ x: MARGIN, y: y - 56, width: PAGE_WIDTH - MARGIN * 2, height: 70, color: LIGHT });
   page.drawRectangle({ x: MARGIN, y: y - 56, width: 5, height: 70, color: ORANGE });
   page.drawText("DITUJUKAN KEPADA", { x: MARGIN + 18, y: y - 5, size: 7, font: bold, color: GREEN });
@@ -107,7 +120,7 @@ export async function generateInvoicePdf(invoice: FinalizedInvoice): Promise<Uin
     const height = Math.max(35, lines.length * 13 + 13);
     if (y - height < 120) {
       page = pdf.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
-      y = drawTableHeader(page, bold, drawHeader(page, regular, bold, invoice) - 4);
+      y = drawTableHeader(page, bold, drawHeader(page, regular, bold, invoice, logo) - 4);
     }
     lines.forEach((line, index) => page.drawText(line, { x: MARGIN + 8, y: y - index * 13, size: 10, font: regular, color: DARK }));
     page.drawText(`${item.quantity} ${safeText(item.unitLabel)}`, { x: 320, y, size: 9, font: regular, color: DARK });
@@ -120,7 +133,7 @@ export async function generateInvoicePdf(invoice: FinalizedInvoice): Promise<Uin
   const summaryHeight = 142 + (invoice.discountRupiah > 0 ? 18 : 0) + (invoice.shippingRupiah > 0 ? 18 : 0);
   if (y - summaryHeight < 46) {
     page = pdf.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
-    y = drawHeader(page, regular, bold, invoice) - 12;
+    y = drawHeader(page, regular, bold, invoice, logo) - 12;
   }
   const labelX = 360;
   page.drawText("Subtotal", { x: labelX, y, size: 10, font: regular, color: MUTED });

@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, lazy, Suspense, useEffect, useMemo, useState } from "react";
 import {
   archivePdf, cancelInvoice, createCustomer, finalizeInvoice, getInvoice, listCustomers, listInvoices, listProducts,
 } from "./api";
@@ -6,6 +6,8 @@ import type { FinalizedInvoice, InvoiceCustomer, InvoiceListItem, InvoiceProduct
 import { calculateTotals, formatRupiah } from "./domain";
 
 const DRAFT_KEY = "ria-noel-invoice-draft-v1";
+
+const PdfPreview = lazy(() => import("./PdfPreview").then((module) => ({ default: module.PdfPreview })));
 
 export type InvoiceRoute = "/invoice/new" | "/invoices" | `/invoices/${string}`;
 
@@ -276,7 +278,7 @@ function PdfActions({ invoice, autoArchive = false }: { invoice: FinalizedInvoic
   async function showPreview() {
     setBusy(true); try { if (preview) URL.revokeObjectURL(preview); setPreview(URL.createObjectURL(await pdfBlob(invoice))); } catch { setMessage("PDF belum dapat dibuka. Silakan coba lagi."); } finally { setBusy(false); }
   }
-  return <section className="pdf-actions" aria-label="PDF nota"><button className="button primary" disabled={busy} type="button" onClick={share}>{busy ? "Menyiapkan PDF…" : "Bagikan PDF"}</button><button className="button secondary" disabled={busy} type="button" onClick={showPreview}>Lihat PDF</button>{message && <p className="notice" role="status">{message}</p>}{preview && <div className="pdf-preview" role="dialog" aria-modal="true" aria-label={`Pratinjau ${invoice.invoiceNumber}`}><iframe title={`Pratinjau ${invoice.invoiceNumber}`} src={preview} /><button className="secondary-button" type="button" autoFocus onClick={() => { URL.revokeObjectURL(preview); setPreview(null); }}>Tutup Pratinjau</button></div>}</section>;
+  return <section className="pdf-actions" aria-label="PDF nota"><button className="button primary" disabled={busy} type="button" onClick={share}>{busy ? "Menyiapkan PDF…" : "Bagikan PDF"}</button><button className="button secondary" disabled={busy} type="button" onClick={showPreview}>Lihat PDF</button>{message && <p className="notice" role="status">{message}</p>}{preview && <div className="pdf-preview" role="dialog" aria-modal="true" aria-label={`Pratinjau ${invoice.invoiceNumber}`}><Suspense fallback={<p className="notice" role="status">Menyiapkan pratinjau…</p>}><PdfPreview url={preview} title={invoice.invoiceNumber} /></Suspense><button className="secondary-button" type="button" autoFocus onClick={() => { URL.revokeObjectURL(preview); setPreview(null); }}>Tutup Pratinjau</button></div>}</section>;
 }
 
 function download(blob: Blob, filename: string) { const url = URL.createObjectURL(blob); const anchor = document.createElement("a"); anchor.href = url; anchor.download = filename; anchor.click(); setTimeout(() => URL.revokeObjectURL(url), 1_000); }

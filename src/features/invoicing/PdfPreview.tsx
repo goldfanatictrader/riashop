@@ -4,7 +4,7 @@ import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
-export function PdfPreview({ url, title }: { url: string; title: string }) {
+export function PdfPreview({ blob, title }: { blob: Blob; title: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState("");
 
@@ -22,9 +22,7 @@ export function PdfPreview({ url, title }: { url: string; title: string }) {
       container.appendChild(status);
       setError("");
       try {
-        const response = await fetch(url);
-        if (!response.ok) throw new Error("bad response");
-        const data = new Uint8Array(await response.arrayBuffer());
+        const data = new Uint8Array(await blob.arrayBuffer());
         task = pdfjsLib.getDocument({ data });
         const pdf = await task.promise;
         if (disposed) return;
@@ -42,15 +40,17 @@ export function PdfPreview({ url, title }: { url: string; title: string }) {
           if (disposed) return;
           container.appendChild(canvas);
         }
-      } catch {
+      } catch (caught) {
         if (disposed) return;
+        console.error("Pratinjau PDF gagal dirender.", caught);
         container.textContent = "";
-        setError("Pratinjau PDF gagal dibuka. Gunakan Bagikan PDF, atau unduh dan buka filenya.");
+        const reason = caught instanceof Error ? caught.message : String(caught);
+        setError(`Pratinjau PDF gagal dibuka (${reason}). Gunakan Bagikan PDF, atau unduh dan buka filenya.`);
       }
     }
     void render();
     return () => { disposed = true; void task?.destroy(); };
-  }, [url]);
+  }, [blob]);
 
   return (
     <div className="pdf-preview-body">

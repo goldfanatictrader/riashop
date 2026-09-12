@@ -13,7 +13,7 @@
     {
       "binding": "DB",
       "database_name": "ria-noel-shop",
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "49280233-13da-452d-9446-777439e220e8",
       "migrations_dir": "migrations"
     }
   ],
@@ -22,5 +22,24 @@
       "binding": "FILES",
       "bucket_name": "ria-noel-shop-files"
     }
-  ]
+  ],
+  "env": {
+    "dev": {
+      "name": "ria-noel-shop-dev",
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "ria-noel-shop-dev",
+          "database_id": "f41ce3a9-39e7-470a-bdc0-eefb0de8fae1",
+          "migrations_dir": "migrations"
+        }
+      ],
+      "r2_buckets": [
+        {
+          "binding": "FILES",
+          "bucket_name": "ria-noel-shop-files-dev"
+        }
+      ]
+    }
+  }
 }

@@ -1,8 +1,9 @@
 import { FormEvent, useEffect, useState } from "react";
 import { CustomerScreen } from "../features/customers/CustomerScreen";
+import { Invoicing, type InvoiceRoute } from "../features/invoicing/Invoicing";
 import { ProductScreen } from "../features/products/ProductScreen";
 
-type View = "loading" | "login" | "home" | "products" | "customers";
+type View = "loading" | "login" | "app" | "products" | "customers";
 
 interface ApiError {
   error?: { message?: string };
@@ -42,12 +43,14 @@ export function App() {
   const [passcode, setPasscode] = useState("");
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [route, setRoute] = useState(window.location.pathname);
+  const [online, setOnline] = useState(navigator.onLine);
 
   useEffect(() => {
     let active = true;
     fetch("/api/v1/auth/session", { credentials: "include" })
       .then((response) => {
-        if (active) setView(response.ok ? "home" : "login");
+        if (active) setView(response.ok ? "app" : "login");
       })
       .catch(() => {
         if (active) {
@@ -57,6 +60,26 @@ export function App() {
       });
     return () => { active = false; };
   }, []);
+
+  useEffect(() => {
+    const updateRoute = () => setRoute(window.location.pathname);
+    const goOnline = () => setOnline(true);
+    const goOffline = () => setOnline(false);
+    window.addEventListener("popstate", updateRoute);
+    window.addEventListener("online", goOnline);
+    window.addEventListener("offline", goOffline);
+    return () => {
+      window.removeEventListener("popstate", updateRoute);
+      window.removeEventListener("online", goOnline);
+      window.removeEventListener("offline", goOffline);
+    };
+  }, []);
+
+  function navigate(path: string) {
+    window.history.pushState({}, "", path);
+    setRoute(path);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 
   async function login(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -74,12 +97,19 @@ export function App() {
         return;
       }
       setPasscode("");
-      setView("home");
+      setView("app");
+      navigate("/");
     } catch {
       setMessage("Koneksi bermasalah. Periksa internet lalu coba lagi.");
     } finally {
       setSubmitting(false);
     }
+  }
+
+  const validInvoiceRoute = route === "/invoice/new" || route === "/invoices" || route.startsWith("/invoices/");
+
+  if (view === "app" && validInvoiceRoute) {
+    return <><ConnectionStatus online={online} /><Invoicing route={route as InvoiceRoute} navigate={navigate} /></>;
   }
 
   async function logout() {
@@ -96,8 +126,8 @@ export function App() {
     }
   }
 
-  if (view === "products") return <ProductScreen onBack={() => setView("home")} />;
-  if (view === "customers") return <CustomerScreen onBack={() => setView("home")} />;
+  if (view === "products") return <ProductScreen onBack={() => setView("app")} />;
+  if (view === "customers") return <CustomerScreen onBack={() => setView("app")} />;
 
   if (view === "loading") {
     return <main className="centered"><p className="status" role="status">Membuka Ria Noel Shop…</p></main>;
@@ -135,7 +165,7 @@ export function App() {
   }
 
   return (
-    <main className="app-shell">
+    <><ConnectionStatus online={online} /><main className="app-shell">
       <header className="app-header">
         <Brand />
         <button className="text-button" type="button" onClick={logout}>Keluar</button>
@@ -151,7 +181,11 @@ export function App() {
             key={action.key}
             className={`action-card${action.primary ? " action-card-primary" : ""}`}
             type="button"
-            onClick={() => action.key === "products" ? setView("products") : setMessage(`${action.title} akan tersedia pada tahap berikutnya.`)}
+            onClick={() => {
+              if (action.key === "invoice") navigate("/invoice/new");
+              else if (action.key === "history") navigate("/invoices");
+              else setView("products");
+            }}
           >
             <span className="action-icon" aria-hidden="true">{action.icon}</span>
             <span className="action-copy">
@@ -167,8 +201,12 @@ export function App() {
       </button>
       {message && <p className="notice" role="status">{message}</p>}
       <p className="help">Pilih salah satu menu di atas untuk mulai bekerja.</p>
-    </main>
+    </main></>
   );
+}
+
+function ConnectionStatus({ online }: { online: boolean }) {
+  return <div className={`connection-status ${online ? "online" : "offline"}`} role="status">{online ? "Online" : "Offline — draft tetap tersimpan"}</div>;
 }
 
 function Brand() {

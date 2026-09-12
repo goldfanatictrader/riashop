@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { customerRoutes } from "./features/customers/api/customerRoutes";
+import { invoiceRoutes } from "./features/invoicing/server";
 import { productRoutes } from "./features/products/api/productRoutes";
 
 export interface Bindings {
@@ -109,7 +110,7 @@ export const app = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 
 app.use("*", async (c, next) => {
   await next();
-  c.header("Content-Security-Policy", "default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'");
+  c.header("Content-Security-Policy", "default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'self'; frame-src 'self' blob:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'");
   c.header("X-Content-Type-Options", "nosniff");
   c.header("Referrer-Policy", "strict-origin-when-cross-origin");
   c.header("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
@@ -205,6 +206,7 @@ app.post("/api/v1/auth/logout", (c) => {
   return c.body(null, 204);
 });
 
+app.route("/", invoiceRoutes);
 app.route("/api/v1/products", productRoutes);
 app.route("/api/v1/customers", customerRoutes);
 

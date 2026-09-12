@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { CustomerScreen } from "../features/customers/CustomerScreen";
 import { Invoicing, type InvoiceRoute } from "../features/invoicing/Invoicing";
 import { ProductScreen } from "../features/products/ProductScreen";
+import { Brand, Icon, Skeleton } from "./Icons";
 
 type View = "loading" | "login" | "app" | "products" | "customers";
 
@@ -14,21 +15,21 @@ const actions = [
     key: "invoice",
     title: "Buat Nota",
     description: "Buat nota baru untuk customer",
-    icon: "▤",
+    icon: "invoice" as const,
     primary: true,
   },
   {
     key: "products",
     title: "Daftar Barang",
     description: "Lihat dan kelola barang",
-    icon: "□",
+    icon: "box" as const,
     primary: false,
   },
   {
     key: "history",
     title: "Nota Sebelumnya",
     description: "Buka kembali nota lama",
-    icon: "◷",
+    icon: "history" as const,
     primary: false,
   },
 ] as const;
@@ -131,7 +132,7 @@ export function App() {
   if (view === "customers") return <CustomerScreen onBack={() => setView("app")} />;
 
   if (view === "loading") {
-    return <main className="centered"><p className="status" role="status">Membuka Ria Noel Shop…</p></main>;
+    return <main className="centered loading-page"><Brand /><Skeleton rows={3} /></main>;
   }
 
   if (view === "login") {
@@ -139,8 +140,9 @@ export function App() {
       <main className="centered login-page">
         <section className="login-card" aria-labelledby="login-title">
           <Brand />
-          <h1 id="login-title">Selamat datang</h1>
-          <p className="lead">Masukkan kode akses untuk membuka Ria Noel Shop.</p>
+          <p className="eyebrow">Ruang kerja toko</p>
+          <h1 id="login-title">Selamat datang kembali.</h1>
+          <p className="lead">Masukkan kode akses untuk mulai menyiapkan nota hari ini.</p>
           <form onSubmit={login}>
             <label htmlFor="passcode">Kode akses</label>
             <input
@@ -156,8 +158,9 @@ export function App() {
               required
             />
             {message && <p className="error" role="alert">{message}</p>}
-            <button className="button primary" type="submit" disabled={submitting}>
+            <button className="button primary icon-button" type="submit" disabled={submitting}>
               {submitting ? "Membuka…" : "Buka Aplikasi"}
+              {!submitting && <Icon name="arrow" />}
             </button>
           </form>
         </section>
@@ -172,9 +175,9 @@ export function App() {
         <button className="text-button" type="button" onClick={logout}>Keluar</button>
       </header>
       <section aria-labelledby="home-title">
-        <p className="eyebrow">Beranda</p>
-        <h1 id="home-title">Selamat datang</h1>
-        <p className="lead">Apa yang ingin dibuat hari ini?</p>
+        <p className="eyebrow">Meja kerja · hari ini</p>
+        <h1 id="home-title">Mari siapkan pesanan dengan rapi.</h1>
+        <p className="lead">Satu alur ringkas dari pesan customer sampai nota siap dibagikan.</p>
       </section>
       <section className="action-grid" aria-label="Menu utama">
         {actions.map((action) => (
@@ -188,17 +191,17 @@ export function App() {
               else setView("products");
             }}
           >
-            <span className="action-icon" aria-hidden="true">{action.icon}</span>
+            <span className="action-icon" aria-hidden="true"><Icon name={action.icon} /></span>
             <span className="action-copy">
               <strong>{action.title}</strong>
               <small>{action.description}</small>
             </span>
-            <span className="action-arrow" aria-hidden="true">›</span>
+            <span className="action-arrow" aria-hidden="true"><Icon name="arrow" /></span>
           </button>
         ))}
       </section>
       <button className="customer-menu-button" type="button" onClick={() => setView("customers")}>
-        <strong>Daftar Customer</strong><span>Kelola nama dan nomor WhatsApp</span>
+        <span className="action-icon"><Icon name="customers" /></span><span><strong>Daftar Customer</strong><span>Kelola nama dan nomor WhatsApp</span></span><Icon name="arrow" />
       </button>
       {message && <p className="notice" role="status">{message}</p>}
       <p className="help">Pilih salah satu menu di atas untuk mulai bekerja.</p>
@@ -208,13 +211,4 @@ export function App() {
 
 function ConnectionStatus({ online }: { online: boolean }) {
   return <div className={`connection-status ${online ? "online" : "offline"}`} role="status">{online ? "Online" : "Offline — draft tetap tersimpan"}</div>;
-}
-
-function Brand() {
-  return (
-    <div className="brand" aria-label="Ria Noel Shop">
-      <span className="brand-mark" aria-hidden="true">R</span>
-      <span><strong>Ria Noel</strong><small>Shop</small></span>
-    </div>
-  );
 }

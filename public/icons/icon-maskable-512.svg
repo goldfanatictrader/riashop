@@ -1,7 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title">
-  <title id="title">Ria Noel Shop</title>
-  <rect width="512" height="512" fill="#087a45"/>
-  <circle cx="256" cy="236" r="154" fill="#fffaf0"/>
-  <path d="M145 296V166h109c57 0 89 25 89 68 0 30-18 52-50 61l64 66h-71l-55-61h-24v61h-62Zm62-51h45c23 0 34-7 34-23s-11-23-34-23h-45v46Z" fill="#f07818"/>
-  <path d="M145 384h222" stroke="#f59a23" stroke-width="24" stroke-linecap="round"/>
-</svg>

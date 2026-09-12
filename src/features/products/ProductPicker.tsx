@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { productImageUrl } from "./productApi";
 import type { Product } from "./types";
 import { useProducts } from "./useProducts";
+import { EmptyState, Icon, Skeleton } from "../../app/Icons";
 
 const rupiah = new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 });
 
@@ -24,7 +25,7 @@ export function ProductPickerCard({ product, selected = false, onSelect }: {
       <strong>{product.name}</strong>
       {product.variant && <span>{product.variant}</span>}
       <b>{rupiah.format(product.priceRupiah)}</b>
-      {selected && <em>✓ Dipilih</em>}
+      {selected && <em><Icon name="check" /> Dipilih</em>}
     </button>
   );
 }
@@ -54,9 +55,9 @@ export function ProductPicker({ selectedIds = [], onSelect }: {
           {categories.map((item) => <button type="button" className={category === item ? "active" : ""} key={item} onClick={() => setCategory(item)}>{item}</button>)}
         </div>
       )}
-      {loading && <p role="status">Memuat barang…</p>}
+      {loading && <Skeleton rows={4} />}
       {error && <p className="error" role="alert">{error}</p>}
-      {!loading && !error && !visible.length && <p className="empty-state">Barang tidak ditemukan.</p>}
+      {!loading && !error && !visible.length && <EmptyState icon="box">Barang tidak ditemukan.</EmptyState>}
       <div className="picker-grid">
         {visible.map((product) => <ProductPickerCard key={product.id} product={product} selected={selectedIds.includes(product.id)} onSelect={onSelect} />)}
       </div>

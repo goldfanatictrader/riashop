@@ -2,6 +2,7 @@ import { FormEvent, useMemo, useState } from "react";
 import { createCustomer, updateCustomer } from "./customerApi";
 import type { Customer } from "./types";
 import { useCustomers } from "./useCustomers";
+import { EmptyState, Icon, Skeleton } from "../../app/Icons";
 
 export function CustomerPicker({ selectedId, onSelect, onClose }: {
   selectedId?: string;
@@ -23,11 +24,11 @@ export function CustomerPicker({ selectedId, onSelect, onClose }: {
       <h2 id="customer-picker-title">Pilih Customer</h2>
       <label htmlFor="customer-picker-search">Cari nama atau WhatsApp</label>
       <input id="customer-picker-search" type="search" value={search} onChange={(event) => setSearch(event.target.value)} />
-      <button className="button primary" type="button" onClick={() => setCreating(true)}>+ Tambah Customer Baru</button>
-      {loading && <p role="status">Memuat customer…</p>}{error && <p className="error" role="alert">{error}</p>}
-      {!loading && !error && !visible.length && <p className="empty-state">Customer tidak ditemukan. Anda dapat menambahkannya di sini.</p>}
+      <button className="button primary icon-button" type="button" onClick={() => setCreating(true)}><Icon name="plus" /> Tambah Customer Baru</button>
+      {loading && <Skeleton />}{error && <p className="error" role="alert">{error}</p>}
+      {!loading && !error && !visible.length && <EmptyState icon="customers">Customer tidak ditemukan. Anda dapat menambahkannya di sini.</EmptyState>}
       <div className="customer-picker-list">
-        {visible.map((customer) => <button className={`customer-choice${selectedId === customer.id ? " selected" : ""}`} aria-pressed={selectedId === customer.id} type="button" key={customer.id} onClick={() => choose(customer)}><strong>{customer.name}</strong><span>{customer.whatsappNumber || "Nomor WhatsApp belum diisi"}</span>{selectedId === customer.id && <b>✓ Dipilih</b>}</button>)}
+        {visible.map((customer) => <button className={`customer-choice${selectedId === customer.id ? " selected" : ""}`} aria-pressed={selectedId === customer.id} type="button" key={customer.id} onClick={() => choose(customer)}><strong>{customer.name}</strong><span>{customer.whatsappNumber || "Nomor WhatsApp belum diisi"}</span>{selectedId === customer.id && <b><Icon name="check" /> Dipilih</b>}</button>)}
       </div>
     </section>
   );

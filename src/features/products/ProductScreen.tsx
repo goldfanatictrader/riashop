@@ -2,6 +2,7 @@ import { FormEvent, useState } from "react";
 import { createProduct, deactivateProduct, productImageUrl, updateProduct, uploadProductImage } from "./productApi";
 import type { Product } from "./types";
 import { useProducts } from "./useProducts";
+import { EmptyState, Icon, Skeleton } from "../../app/Icons";
 
 const rupiah = new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 });
 
@@ -25,14 +26,14 @@ export function ProductScreen({ onBack }: { onBack: () => void }) {
 
   return (
     <main className="feature-page">
-      <header className="page-header"><button className="back-button" type="button" onClick={onBack}>‹ Kembali</button><h1>Daftar Barang</h1></header>
-      <button className="button primary" type="button" onClick={() => setEditing(null)}>+ Tambah Barang</button>
+      <header className="page-header"><button className="back-button icon-button" type="button" onClick={onBack}><Icon name="back" /> Kembali</button><h1>Daftar Barang</h1></header>
+      <button className="button primary icon-button" type="button" onClick={() => setEditing(null)}><Icon name="plus" /> Tambah Barang</button>
       {notice && <p className="notice" role="status">{notice}</p>}
       <label htmlFor="product-search">Cari barang</label>
       <input id="product-search" type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Nama, kategori, atau ukuran" />
-      {loading && <p role="status">Memuat daftar barang…</p>}
+      {loading && <Skeleton rows={4} />}
       {error && <p className="error" role="alert">{error}</p>}
-      {!loading && !products.length && <p className="empty-state">Belum ada barang. Tambahkan barang agar bisa membuat nota.</p>}
+      {!loading && !products.length && <EmptyState icon="box">Belum ada barang. Tambahkan barang agar bisa membuat nota.</EmptyState>}
       <div className="management-list">
         {products.map((product) => (
           <article className={`management-card${product.isActive ? "" : " inactive"}`} key={product.id}>
@@ -73,7 +74,7 @@ function ProductForm({ product, onCancel, onSaved }: { product: Product | null; 
   }
 
   return (
-    <main className="feature-page"><header className="page-header"><button className="back-button" type="button" onClick={onCancel}>‹ Batal</button><h1>{product ? "Edit Barang" : "Tambah Barang"}</h1></header>
+    <main className="feature-page"><header className="page-header"><button className="back-button icon-button" type="button" onClick={onCancel}><Icon name="back" /> Batal</button><h1>{product ? "Edit Barang" : "Tambah Barang"}</h1></header>
       <form className="feature-form" onSubmit={submit}>
         <label htmlFor="product-name">Nama barang *</label><input id="product-name" value={name} onChange={(event) => setName(event.target.value)} maxLength={160} required />
         <label htmlFor="product-category">Kategori</label><input id="product-category" value={category} onChange={(event) => setCategory(event.target.value)} maxLength={100} />

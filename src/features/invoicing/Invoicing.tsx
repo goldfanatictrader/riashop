@@ -4,6 +4,7 @@ import {
 } from "./api";
 import type { FinalizedInvoice, InvoiceCustomer, InvoiceListItem, InvoiceProduct } from "./domain";
 import { calculateTotals, formatRupiah } from "./domain";
+import { EmptyState, Icon, Skeleton } from "../../app/Icons";
 
 const DRAFT_KEY = "ria-noel-invoice-draft-v1";
 
@@ -65,7 +66,7 @@ export function Invoicing({ route, navigate }: { route: InvoiceRoute; navigate: 
 function PageHeader({ title, onBack }: { title: string; onBack: () => void }) {
   return (
     <header className="page-header">
-      <button className="secondary-button compact" type="button" onClick={onBack}>‹ Kembali</button>
+      <button className="secondary-button compact icon-button" type="button" onClick={onBack}><Icon name="back" /> Kembali</button>
       <h1>{title}</h1>
     </header>
   );
@@ -131,21 +132,21 @@ function InvoiceEditor({ navigate }: { navigate: (route: string) => void }) {
       <section className="form-section" aria-labelledby="customer-title">
         <h2 id="customer-title">Customer</h2>
         <button className="picker-button" type="button" onClick={() => setCustomerPicker(true)}>
-          <span><strong>{draft.customer?.name ?? "Pilih customer"}</strong><small>{draft.customer?.whatsappNumber ?? "Cari atau tambah customer"}</small></span><span>›</span>
+          <span><strong>{draft.customer?.name ?? "Pilih customer"}</strong><small>{draft.customer?.whatsappNumber ?? "Cari atau tambah customer"}</small></span><Icon name="arrow" />
         </button>
       </section>
       <section className="form-section" aria-labelledby="items-title">
-        <div className="section-heading"><h2 id="items-title">Barang</h2><button className="secondary-button" type="button" onClick={() => setProductPicker(true)}>+ Tambah Barang</button></div>
-        {!draft.lines.length && <p className="empty-state">Belum ada barang. Tambahkan barang agar bisa membuat nota.</p>}
+        <div className="section-heading"><h2 id="items-title">Barang</h2><button className="secondary-button icon-button" type="button" onClick={() => setProductPicker(true)}><Icon name="plus" /> Tambah Barang</button></div>
+        {!draft.lines.length && <EmptyState icon="box">Belum ada barang. Tambahkan barang agar nota dapat dibuat.</EmptyState>}
         <div className="invoice-lines">
           {draft.lines.map((line) => (
             <article className="invoice-line" key={line.product.id}>
               <div><h3>{line.product.name}</h3><p>{line.product.variant || "Tanpa varian"} · {formatRupiah(line.product.priceRupiah)}/{line.product.unitLabel}</p></div>
               <div className="line-controls">
                 <div className="stepper" aria-label={`Jumlah ${line.product.name}`}>
-                  <button type="button" onClick={() => changeQuantity(line.product.id, line.quantity - 1)} aria-label={`Kurangi ${line.product.name}`}>−</button>
+                  <button type="button" onClick={() => changeQuantity(line.product.id, line.quantity - 1)} aria-label={`Kurangi ${line.product.name}`}><Icon name="minus" /></button>
                   <input aria-label={`Jumlah ${line.product.name}`} inputMode="decimal" type="number" min="0.01" step="1" value={line.quantity} onChange={(event) => changeQuantity(line.product.id, Number(event.target.value))} />
-                  <button type="button" onClick={() => changeQuantity(line.product.id, line.quantity + 1)} aria-label={`Tambah ${line.product.name}`}>+</button>
+                  <button type="button" onClick={() => changeQuantity(line.product.id, line.quantity + 1)} aria-label={`Tambah ${line.product.name}`}><Icon name="plus" /></button>
                 </div>
                 <strong>{formatRupiah(line.product.priceRupiah * line.quantity)}</strong>
               </div>
@@ -165,7 +166,7 @@ function InvoiceEditor({ navigate }: { navigate: (route: string) => void }) {
         <p className="grand-total"><span>Total</span><strong>{formatRupiah(totals.grandTotalRupiah)}</strong></p>
       </section>
       {error && <div className="error-panel" role="alert"><p>{error}</p><button type="button" onClick={submit}>Coba Lagi</button></div>}
-      <button className="button primary sticky-action" type="button" disabled={submitting} onClick={submit}>{submitting ? "Membuat nota…" : "Buat PDF"}</button>
+      <button className="button primary sticky-action icon-button" type="button" disabled={submitting} onClick={submit}>{submitting ? "Membuat nota…" : <><Icon name="invoice" /> Buat PDF <Icon name="arrow" /></>}</button>
     </main>
   );
 }
@@ -183,11 +184,11 @@ function CustomerPicker({ selected, onSelect, onBack }: { selected: InvoiceCusto
     <main className="app-shell">
       <PageHeader title="Pilih Customer" onBack={onBack} />
       <label htmlFor="customer-search">Cari customer</label><input id="customer-search" type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Nama atau nomor WhatsApp" />
-      <button className="button secondary" type="button" onClick={() => setCreating((value) => !value)}>{creating ? "Tutup Form" : "+ Tambah Customer Baru"}</button>
+      <button className="button secondary icon-button" type="button" onClick={() => setCreating((value) => !value)}><Icon name={creating ? "close" : "plus"} />{creating ? "Tutup Form" : "Tambah Customer Baru"}</button>
       {creating && <InlineCustomerForm onCreated={onSelect} />}
-      {customers.loading && <p role="status">Memuat customer…</p>}
+      {customers.loading && <Skeleton />}
       {customers.error && <ErrorRetry message={customers.error} retry={customers.reload} />}
-      {!customers.loading && !customers.error && customers.data?.length === 0 && <p className="empty-state">Belum ada customer. Tambahkan customer saat membuat nota.</p>}
+      {!customers.loading && !customers.error && customers.data?.length === 0 && <EmptyState icon="customers">Belum ada customer. Tambahkan customer saat membuat nota.</EmptyState>}
       <div className="selection-list">{customers.data?.map((customer) => <button className={selected?.id === customer.id ? "selected" : ""} type="button" key={customer.id} onClick={() => onSelect(customer)}><strong>{customer.name}</strong><small>{customer.whatsappNumber || "Nomor WhatsApp belum diisi"}</small></button>)}</div>
     </main>
   );
@@ -208,13 +209,13 @@ function InlineCustomerForm({ onCreated }: { onCreated: (customer: InvoiceCustom
 function ProductPicker({ selected, onSelect, onBack }: { selected: Set<string>; onSelect: (value: InvoiceProduct) => void; onBack: () => void }) {
   const [search, setSearch] = useState("");
   const products = useLoad(listProducts, search);
-  return <main className="app-shell"><PageHeader title="Pilih Barang" onBack={onBack} /><label htmlFor="product-search">Cari barang</label><input id="product-search" type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Nama, ukuran, atau kategori" />{products.loading && <p role="status">Memuat barang…</p>}{products.error && <ErrorRetry message={products.error} retry={products.reload} />}{!products.loading && !products.error && products.data?.length === 0 && <p className="empty-state">Belum ada barang. Tambahkan barang dari menu Daftar Barang.</p>}<div className="product-grid">{products.data?.map((product) => <button type="button" disabled={selected.has(product.id)} className={selected.has(product.id) ? "selected" : ""} key={product.id} onClick={() => onSelect(product)}>{product.imageUrl ? <img src={product.imageUrl} alt="" loading="lazy" decoding="async" /> : <span className="product-placeholder" aria-hidden="true">□</span>}<strong>{product.name}</strong><small>{product.variant || product.category || "Tanpa varian"}</small><b>{formatRupiah(product.priceRupiah)}/{product.unitLabel}</b><em>{selected.has(product.id) ? "Sudah dipilih" : "Pilih barang"}</em></button>)}</div></main>;
+  return <main className="app-shell"><PageHeader title="Pilih Barang" onBack={onBack} /><label htmlFor="product-search">Cari barang</label><input id="product-search" type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Nama, ukuran, atau kategori" />{products.loading && <Skeleton rows={4} />}{products.error && <ErrorRetry message={products.error} retry={products.reload} />}{!products.loading && !products.error && products.data?.length === 0 && <EmptyState icon="box">Belum ada barang. Tambahkan barang dari menu Daftar Barang.</EmptyState>}<div className="product-grid">{products.data?.map((product) => <button type="button" disabled={selected.has(product.id)} className={selected.has(product.id) ? "selected" : ""} key={product.id} onClick={() => onSelect(product)}>{product.imageUrl ? <img src={product.imageUrl} alt="" loading="lazy" decoding="async" /> : <span className="product-placeholder" aria-hidden="true"><Icon name="box" /></span>}<strong>{product.name}</strong><small>{product.variant || product.category || "Tanpa varian"}</small><b>{formatRupiah(product.priceRupiah)}/{product.unitLabel}</b><em>{selected.has(product.id) ? <><Icon name="check" /> Sudah dipilih</> : "Pilih barang"}</em></button>)}</div></main>;
 }
 
 function InvoiceHistory({ navigate }: { navigate: (route: string) => void }) {
   const [search, setSearch] = useState("");
   const invoices = useLoad(listInvoices, search);
-  return <main className="app-shell"><PageHeader title="Nota Sebelumnya" onBack={() => navigate("/")} /><label htmlFor="invoice-search">Cari nota</label><input id="invoice-search" type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Nomor nota atau nama customer" />{invoices.loading && <p role="status">Memuat riwayat…</p>}{invoices.error && <ErrorRetry message={invoices.error} retry={invoices.reload} />}{!invoices.loading && !invoices.error && invoices.data?.length === 0 && <p className="empty-state">Belum ada nota penjualan.</p>}<div className="history-list">{invoices.data?.map((invoice) => <InvoiceHistoryCard key={invoice.id} invoice={invoice} onClick={() => navigate(`/invoices/${invoice.id}`)} />)}</div></main>;
+  return <main className="app-shell"><PageHeader title="Nota Sebelumnya" onBack={() => navigate("/")} /><label htmlFor="invoice-search">Cari nota</label><input id="invoice-search" type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Nomor nota atau nama customer" />{invoices.loading && <Skeleton rows={4} />}{invoices.error && <ErrorRetry message={invoices.error} retry={invoices.reload} />}{!invoices.loading && !invoices.error && invoices.data?.length === 0 && <EmptyState icon="history">Belum ada nota penjualan. Nota yang selesai akan tersusun rapi di sini.</EmptyState>}<div className="history-list">{invoices.data?.map((invoice) => <InvoiceHistoryCard key={invoice.id} invoice={invoice} onClick={() => navigate(`/invoices/${invoice.id}`)} />)}</div></main>;
 }
 
 function InvoiceHistoryCard({ invoice, onClick }: { invoice: InvoiceListItem; onClick: () => void }) {
@@ -224,7 +225,7 @@ function InvoiceHistoryCard({ invoice, onClick }: { invoice: InvoiceListItem; on
 function InvoiceDetail({ id, navigate }: { id: string; navigate: (route: string) => void }) {
   const invoice = useLoad(getInvoice, id);
   const [actionError, setActionError] = useState("");
-  if (invoice.loading) return <main className="app-shell"><PageHeader title="Detail Nota" onBack={() => navigate("/invoices")} /><p role="status">Memuat nota…</p></main>;
+  if (invoice.loading) return <main className="app-shell"><PageHeader title="Detail Nota" onBack={() => navigate("/invoices")} /><Skeleton rows={5} /></main>;
   if (invoice.error || !invoice.data) return <main className="app-shell"><PageHeader title="Detail Nota" onBack={() => navigate("/invoices")} /><ErrorRetry message={invoice.error || "Nota tidak ditemukan."} retry={invoice.reload} /></main>;
   const data = invoice.data;
   function duplicate() {
@@ -243,7 +244,7 @@ function InvoiceSnapshot({ invoice }: { invoice: FinalizedInvoice }) {
 }
 
 function InvoiceSuccess({ invoice, navigate }: { invoice: FinalizedInvoice; navigate: (route: string) => void }) {
-  return <main className="app-shell success-page"><div className="success-mark" aria-hidden="true">✓</div><h1>Nota berhasil dibuat</h1><p>{invoice.invoiceNumber}</p><InvoiceSnapshot invoice={invoice} /><PdfActions invoice={invoice} autoArchive /><button className="button secondary" type="button" onClick={() => navigate("/")}>Kembali ke Beranda</button></main>;
+  return <main className="app-shell success-page"><div className="success-mark" aria-hidden="true"><Icon name="check" /></div><p className="eyebrow">Siap dibagikan</p><h1>Nota berhasil dibuat</h1><p>{invoice.invoiceNumber}</p><InvoiceSnapshot invoice={invoice} /><PdfActions invoice={invoice} autoArchive /><button className="button secondary icon-button" type="button" onClick={() => navigate("/")}><Icon name="back" /> Kembali ke Beranda</button></main>;
 }
 
 async function pdfBlob(invoice: FinalizedInvoice): Promise<Blob> {
@@ -277,7 +278,7 @@ function PdfActions({ invoice, autoArchive = false }: { invoice: FinalizedInvoic
   async function showPreview() {
     setBusy(true); try { setPreview(await pdfBlob(invoice)); } catch { setMessage("PDF belum dapat dibuka. Silakan coba lagi."); } finally { setBusy(false); }
   }
-  return <section className="pdf-actions" aria-label="PDF nota"><button className="button primary" disabled={busy} type="button" onClick={share}>{busy ? "Menyiapkan PDF…" : "Bagikan PDF"}</button><button className="button secondary" disabled={busy} type="button" onClick={showPreview}>Lihat PDF</button>{message && <p className="notice" role="status">{message}</p>}{preview && <div className="pdf-preview" role="dialog" aria-modal="true" aria-label={`Pratinjau ${invoice.invoiceNumber}`}><Suspense fallback={<p className="notice" role="status">Menyiapkan pratinjau…</p>}><PdfPreview blob={preview} title={invoice.invoiceNumber} /></Suspense><button className="secondary-button" type="button" autoFocus onClick={() => setPreview(null)}>Tutup Pratinjau</button></div>}</section>;
+  return <section className="pdf-actions" aria-label="PDF nota"><button className="button primary icon-button" disabled={busy} type="button" onClick={share}>{busy ? "Menyiapkan PDF…" : <><Icon name="share" /> Bagikan PDF</>}</button><button className="button secondary icon-button" disabled={busy} type="button" onClick={showPreview}><Icon name="invoice" /> Lihat PDF</button>{message && <p className="notice" role="status">{message}</p>}{preview && <div className="pdf-preview" role="dialog" aria-modal="true" aria-label={`Pratinjau ${invoice.invoiceNumber}`}><Suspense fallback={<Skeleton rows={3} />}><PdfPreview blob={preview} title={invoice.invoiceNumber} /></Suspense><button className="secondary-button icon-button" type="button" autoFocus onClick={() => setPreview(null)}><Icon name="close" /> Tutup Pratinjau</button></div>}</section>;
 }
 
 function download(blob: Blob, filename: string) { const url = URL.createObjectURL(blob); const anchor = document.createElement("a"); anchor.href = url; anchor.download = filename; anchor.click(); setTimeout(() => URL.revokeObjectURL(url), 1_000); }

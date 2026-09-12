@@ -1,4 +1,5 @@
 import { FormEvent, lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   archivePdf, cancelInvoice, createCustomer, finalizeInvoice, getInvoice, listCustomers, listProducts,
 } from "./api";
@@ -279,7 +280,7 @@ function PdfActions({ invoice, autoArchive = false }: { invoice: FinalizedInvoic
   async function showPreview() {
     setBusy(true); try { setPreview(await pdfBlob(invoice)); } catch { setMessage("PDF belum dapat dibuka. Silakan coba lagi."); } finally { setBusy(false); }
   }
-  return <section className="pdf-actions" aria-label="PDF nota"><button className="button primary icon-button" disabled={busy} type="button" onClick={share}>{busy ? "Menyiapkan PDF…" : <><Icon name="share" /> Bagikan PDF</>}</button><button className="button secondary icon-button" disabled={busy} type="button" onClick={showPreview}><Icon name="invoice" /> Lihat PDF</button>{message && <p className="notice" role="status">{message}</p>}{preview && <div className="pdf-preview" role="dialog" aria-modal="true" aria-label={`Pratinjau ${invoice.invoiceNumber}`}><Suspense fallback={<Skeleton rows={3} />}><PdfPreview blob={preview} title={invoice.invoiceNumber} /></Suspense><button className="secondary-button icon-button" type="button" autoFocus onClick={() => setPreview(null)}><Icon name="close" /> Tutup Pratinjau</button></div>}</section>;
+  return <section className="pdf-actions" aria-label="PDF nota"><button className="button primary icon-button" disabled={busy} type="button" onClick={share}>{busy ? "Menyiapkan PDF…" : <><Icon name="share" /> Bagikan PDF</>}</button><button className="button secondary icon-button" disabled={busy} type="button" onClick={showPreview}><Icon name="invoice" /> Lihat PDF</button>{message && <p className="notice" role="status">{message}</p>}{preview && createPortal(<div className="pdf-preview" role="dialog" aria-modal="true" aria-label={`Pratinjau ${invoice.invoiceNumber}`}><Suspense fallback={<Skeleton rows={3} />}><PdfPreview blob={preview} title={invoice.invoiceNumber} /></Suspense><button className="secondary-button icon-button" type="button" autoFocus onClick={() => setPreview(null)}><Icon name="close" /> Tutup Pratinjau</button></div>, document.body)}</section>;
 }
 
 function download(blob: Blob, filename: string) { const url = URL.createObjectURL(blob); const anchor = document.createElement("a"); anchor.href = url; anchor.download = filename; anchor.click(); setTimeout(() => URL.revokeObjectURL(url), 1_000); }

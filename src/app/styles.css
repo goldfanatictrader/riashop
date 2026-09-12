@@ -292,7 +292,7 @@ textarea {
   margin: 0 auto;
   padding: 22px 20px 60px;
   background: var(--surface);
-  animation: page-in 240ms ease both;
+  animation: page-in 240ms ease backwards;
 }
 .app-header {
   display: flex;
@@ -1066,7 +1066,7 @@ textarea {
   gap: 10px;
   padding: 12px;
   background: rgba(7, 35, 26, 0.96);
-  animation: dialog-in 180ms ease both;
+  animation: dialog-in 180ms ease backwards;
 }
 .pdf-preview-body {
   overflow: auto;

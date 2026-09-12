@@ -17,11 +17,17 @@ describe("domain nota", () => {
   it.each([
     [0, "Nol Rupiah"],
     [11, "Sebelas Rupiah"],
+    [12, "Dua Belas Rupiah"],
     [15, "Lima Belas Rupiah"],
+    [21, "Dua Puluh Satu Rupiah"],
     [100, "Seratus Rupiah"],
+    [111, "Seratus Sebelas Rupiah"],
     [1_000, "Seribu Rupiah"],
+    [2_001, "Dua Ribu Satu Rupiah"],
     [1_080_000, "Satu Juta Delapan Puluh Ribu Rupiah"],
     [2_345_678, "Dua Juta Tiga Ratus Empat Puluh Lima Ribu Enam Ratus Tujuh Puluh Delapan Rupiah"],
+    [1_000_000_000, "Satu Miliar Rupiah"],
+    [1_000_000_000_000, "Satu Triliun Rupiah"],
   ])("menulis %i dalam bahasa Indonesia", (value, expected) => {
     expect(amountInWords(value)).toBe(expected);
   });

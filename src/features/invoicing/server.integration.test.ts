@@ -61,13 +61,14 @@ describe("integrasi finalisasi nota", () => {
     };
   });
 
-  async function finalize() {
+  async function finalize(overrides: Record<string, unknown> = {}) {
     return invoiceRoutes.request("https://ria.test/api/v1/invoices/finalize", {
       method: "POST",
       headers: { "Content-Type": "application/json", Origin: "https://ria.test" },
       body: JSON.stringify({
         customerId: "customer-1", invoiceDate: "2026-09-12", discountRupiah: 0, shippingRupiah: 0,
         items: [{ productId: "product-1", quantity: 6 }, { productId: "product-2", quantity: 6 }],
+        ...overrides,
       }),
     }, env);
   }
@@ -90,12 +91,32 @@ describe("integrasi finalisasi nota", () => {
     expect(detailBody.data.items[0]).toMatchObject({ productName: "Mangkok Jago Printing Batik", unitPriceRupiah: 90_000 });
   });
 
+  it("mengabaikan total dari browser dan menghitung diskon serta ongkir di server", async () => {
+    const response = await finalize({
+      discountRupiah: 100_000,
+      shippingRupiah: 20_000,
+      subtotalRupiah: 1,
+      grandTotalRupiah: 1,
+      amountInWords: "Satu Rupiah",
+    });
+
+    expect(response.status).toBe(201);
+    await expect(response.json()).resolves.toMatchObject({
+      data: {
+        subtotalRupiah: 1_080_000,
+        discountRupiah: 100_000,
+        shippingRupiah: 20_000,
+        grandTotalRupiah: 1_000_000,
+        amountInWords: "Satu Juta Rupiah",
+      },
+    });
+  });
+
   it("memberi nomor unik untuk finalisasi berurutan dan mempertahankan pembatalan", async () => {
-    const first = await finalize();
-    const second = await finalize();
+    const [first, second] = await Promise.all([finalize(), finalize()]);
     const firstData = (await first.json() as { data: { id: string; invoiceNumber: string } }).data;
     const secondData = (await second.json() as { data: { invoiceNumber: string } }).data;
-    expect([firstData.invoiceNumber, secondData.invoiceNumber]).toEqual(["RNS-202609-0001", "RNS-202609-0002"]);
+    expect([firstData.invoiceNumber, secondData.invoiceNumber].sort()).toEqual(["RNS-202609-0001", "RNS-202609-0002"]);
 
     const cancelled = await invoiceRoutes.request(`https://ria.test/api/v1/invoices/${firstData.id}/cancel`, {
       method: "POST", headers: { Origin: "https://ria.test" },
@@ -103,5 +124,20 @@ describe("integrasi finalisasi nota", () => {
     expect(cancelled.status).toBe(200);
     await expect(cancelled.json()).resolves.toMatchObject({ data: { status: "cancelled" } });
     expect(database.prepare("SELECT COUNT(*) AS count FROM invoices").get()).toEqual({ count: 2 });
+  });
+
+  it("mengembalikan alokasi urutan ketika penyimpanan item gagal", async () => {
+    database.exec(`CREATE TRIGGER force_item_failure BEFORE INSERT ON invoice_items
+      BEGIN SELECT RAISE(ABORT, 'forced item failure'); END`);
+
+    const failed = await finalize();
+    expect(failed.status).toBe(500);
+    expect(database.prepare("SELECT COUNT(*) AS count FROM invoice_sequences").get()).toEqual({ count: 0 });
+    expect(database.prepare("SELECT COUNT(*) AS count FROM invoices").get()).toEqual({ count: 0 });
+    expect(database.prepare("SELECT COUNT(*) AS count FROM invoice_items").get()).toEqual({ count: 0 });
+
+    database.exec("DROP TRIGGER force_item_failure");
+    const retried = await finalize();
+    await expect(retried.json()).resolves.toMatchObject({ data: { invoiceNumber: "RNS-202609-0001" } });
   });
 });

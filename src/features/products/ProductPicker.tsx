@@ -19,7 +19,7 @@ export function ProductPickerCard({ product, selected = false, onSelect }: {
       onClick={() => onSelect(product)}
     >
       <span className="product-photo">
-        {imageUrl ? <img src={imageUrl} alt="" /> : <span aria-hidden="true">Foto belum ada</span>}
+        {imageUrl ? <img src={imageUrl} alt="" loading="lazy" decoding="async" /> : <span aria-hidden="true">Foto belum ada</span>}
       </span>
       <strong>{product.name}</strong>
       {product.variant && <span>{product.variant}</span>}

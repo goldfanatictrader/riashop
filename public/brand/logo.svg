@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 176" role="img" aria-labelledby="title desc">
+  <title id="title">Ria Noel Shop</title>
+  <desc id="desc">Tanda Ria berwarna hijau, jingga, dan merah dalam sapuan oval terbuka.</desc>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M365 54C330 13 245 2 154 11 70 19 22 54 18 94c-4 42 45 68 128 72 85 4 166-10 217-38" stroke="#08734B" stroke-width="12"/>
+    <path d="M363 54c-8-10-20-19-34-26" stroke="#E8891C" stroke-width="12"/>
+    <path d="M87 129 130 41h30c24 0 40 11 34 31-5 17-23 27-48 28l31 29" stroke="#08734B" stroke-width="15"/>
+    <path d="M118 84h31c14 0 25-5 28-14 3-10-5-16-20-16h-17" stroke="#08734B" stroke-width="11"/>
+    <path d="M205 78c-7 18-19 48-2 51 14 3 26-16 34-35l7-16m-31-23h1" stroke="#E8891C" stroke-width="14"/>
+    <path d="M255 91c9-10 20-16 29-14 14 3 9 22 2 36-7 13-17 19-26 16-13-4-8-23-5-38Zm34-13-18 49c14 5 29-12 40-34" stroke="#E8891C" stroke-width="13"/>
+    <path d="M317 82c11-7 26-7 33 1l-17 46" stroke="#E8891C" stroke-width="13"/>
+  </g>
+  <text x="128" y="154" fill="#CB3F32" font-family="Arial, sans-serif" font-size="20" font-weight="800" letter-spacing="3">NOEL SHOP</text>
+  <circle cx="216" cy="50" r="7" fill="#E8891C"/>
+</svg>

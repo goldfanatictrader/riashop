@@ -92,3 +92,13 @@
 **Status:** Chosen for Milestones 2–3
 **Decision:** `ProductPicker` and `CustomerPicker` are reusable controlled components. Selection is returned to the embedding invoice editor through callbacks. Inline customer creation changes only picker-local form state and returns the newly persisted customer before closing; it does not navigate or own invoice draft state.
 **Reason:** The invoice editor is being built separately. Keeping draft ownership in its parent is the smallest reliable way to preserve selected items and amounts while creating a customer inline.
+
+## D-021 — Milestone 7 hardening remains behavior-preserving
+**Status:** Chosen for Milestone 7
+**Decision:** Keep the existing server-authoritative transaction and product flows unchanged while adding edge-case tests, minimum control/text sizing, narrow-layout guards, matching Worker/static security headers, lazy product-image loading, and production builds without source maps. Keep `pdf-lib` in its existing on-demand chunk.
+**Reason:** These changes close the documented QA, accessibility, security, and bundle gates without expanding V1 or moving totals, invoice sequence allocation, state, or R2 ownership into the browser.
+
+## D-022 — Android acceptance remains a deployment gate
+**Status:** Required for production release
+**Decision:** Automated checks and desktop Chromium responsive verification do not replace the real-Android P0 script in `12_QA_AND_ACCEPTANCE.md`.
+**Reason:** Native file sharing, installed-PWA behavior, device rendering, and production D1/R2 behavior require the target device and deployed bindings. Milestone 7 may be code-complete while production release remains pending that manual gate.

@@ -40,6 +40,11 @@ describe("Worker M0 dan M1", () => {
     });
     expect(env.DB.prepare).toHaveBeenCalledWith("SELECT 1 AS value");
     expect(env.FILES.list).toHaveBeenCalledWith({ limit: 1 });
+    expect(response.headers.get("Content-Security-Policy")).toContain("frame-src 'self' blob:");
+    expect(response.headers.get("Content-Security-Policy")).toContain("worker-src 'self'");
+    expect(response.headers.get("X-Content-Type-Options")).toBe("nosniff");
+    expect(response.headers.get("X-Frame-Options")).toBe("DENY");
+    expect(response.headers.get("Referrer-Policy")).toBe("strict-origin-when-cross-origin");
   });
 
   it("menolak API terlindungi tanpa sesi", async () => {
@@ -97,5 +102,42 @@ describe("Worker M0 dan M1", () => {
     );
 
     expect(response.status).toBe(401);
+  });
+
+  it("menerapkan middleware sesi ke seluruh API terlindungi", async () => {
+    const env = bindings();
+    const protectedPaths = [
+      "/api/v1/products",
+      "/api/v1/customers",
+      "/api/v1/invoices",
+    ];
+
+    for (const path of protectedPaths) {
+      const response = await app.request(`https://ria.test${path}`, undefined, env);
+      expect(response.status, path).toBe(401);
+      await expect(response.json()).resolves.toMatchObject({ error: { code: "UNAUTHENTICATED" } });
+    }
+  });
+
+  it("menolak sesi yang sudah melewati masa berlaku", async () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date("2026-09-12T00:00:00.000Z"));
+      const env = bindings();
+      const loginResponse = await login(env);
+      const cookie = loginResponse.headers.get("Set-Cookie")?.split(";", 1)[0] ?? "";
+
+      vi.setSystemTime(new Date("2026-10-13T00:00:00.000Z"));
+      const response = await app.request(
+        "https://ria.test/api/v1/auth/session",
+        { headers: { Cookie: cookie } },
+        env,
+      );
+
+      expect(response.status).toBe(401);
+      await expect(response.json()).resolves.toMatchObject({ error: { code: "UNAUTHENTICATED" } });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

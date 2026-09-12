@@ -1,4 +1,4 @@
-import { PDFDocument } from "pdf-lib";
+import { decodePDFRawStream, PDFDocument, PDFRawStream } from "pdf-lib";
 import { describe, expect, it } from "vitest";
 import type { FinalizedInvoice } from "./domain";
 import { generateInvoicePdf, invoicePdfFilename } from "./pdf";
@@ -32,5 +32,20 @@ describe("PDF nota", () => {
   it("memecah daftar panjang ke beberapa halaman", async () => {
     const loaded = await PDFDocument.load(await generateInvoicePdf(invoice(60)));
     expect(loaded.getPageCount()).toBeGreaterThan(1);
+  });
+
+  it("menulis jumlah terbilang snapshot ke isi PDF", async () => {
+    const source = invoice();
+    const loaded = await PDFDocument.load(await generateInvoicePdf(source));
+    const content = loaded.context.enumerateIndirectObjects()
+      .filter(([, object]) => object instanceof PDFRawStream)
+      .map(([, object]) => new TextDecoder().decode(decodePDFRawStream(object as PDFRawStream).decode()))
+      .join("\n");
+    const encodedWords = [...new TextEncoder().encode(source.amountInWords)]
+      .map((byte) => byte.toString(16).padStart(2, "0"))
+      .join("")
+      .toUpperCase();
+
+    expect(content).toContain(`<${encodedWords}> Tj`);
   });
 });

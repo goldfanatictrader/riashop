@@ -78,7 +78,8 @@ export function App() {
   function navigate(path: string) {
     window.history.pushState({}, "", path);
     setRoute(path);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    const behavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+    window.scrollTo({ top: 0, behavior });
   }
 
   async function login(event: FormEvent<HTMLFormElement>) {

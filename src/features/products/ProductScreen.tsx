@@ -36,7 +36,7 @@ export function ProductScreen({ onBack }: { onBack: () => void }) {
       <div className="management-list">
         {products.map((product) => (
           <article className={`management-card${product.isActive ? "" : " inactive"}`} key={product.id}>
-            <div className="list-thumbnail">{productImageUrl(product) ? <img src={productImageUrl(product)!} alt="" /> : <span aria-hidden="true">Tanpa foto</span>}</div>
+            <div className="list-thumbnail">{productImageUrl(product) ? <img src={productImageUrl(product)!} alt="" loading="lazy" decoding="async" /> : <span aria-hidden="true">Tanpa foto</span>}</div>
             <div><h2>{product.name}</h2><p>{product.variant || product.category || "Tanpa variasi"}</p><strong>{rupiah.format(product.priceRupiah)} / {product.unitLabel}</strong>{!product.isActive && <span className="status-label">Nonaktif</span>}</div>
             <div className="card-actions"><button type="button" onClick={() => setEditing(product)}>Edit</button>{product.isActive && <button className="danger-button" type="button" onClick={() => void deactivate(product)}>Nonaktifkan</button>}</div>
           </article>

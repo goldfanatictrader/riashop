@@ -1,0 +1,3 @@
+# Salin menjadi .dev.vars untuk pengembangan lokal. Jangan commit .dev.vars.
+OPERATOR_PASSCODE="ganti-dengan-kode-rahasia"
+SESSION_SECRET="ganti-dengan-rahasia-acak-minimal-32-karakter"

@@ -65,3 +65,86 @@ Work in vertical slices. Each milestone must finish with:
 - next milestone.
 
 Do not claim a feature is complete without running the relevant checks.
+
+## Implemented milestone
+
+The repository currently implements Milestone 0 and Milestone 1 only:
+
+- React, Vite, and TypeScript mobile-first frontend;
+- one Hono Worker for `/api/v1/*` plus Cloudflare Static Assets;
+- local/production bindings for D1 (`DB`) and R2 (`FILES`);
+- initial D1 migration copied exactly from the locked `database/schema.sql`;
+- operator unlock with a signed 30-day session cookie;
+- protected API middleware, health probes, login/session/logout;
+- Indonesian login and home UI with the three required primary actions;
+- PWA manifest and starter icons.
+
+The product, customer, and invoice flows deliberately remain for later milestones. Home actions currently explain that those flows are not available yet instead of pretending they are complete.
+
+## Requirements
+
+- Node.js 22 or newer
+- npm
+- a Cloudflare account for remote D1/R2 deployment
+
+## Local development
+
+Install dependencies and create local secrets:
+
+```bash
+npm install
+cp .dev.vars.example .dev.vars
+```
+
+Edit `.dev.vars` with a private operator passcode and a random `SESSION_SECRET` of at least 32 characters. Then apply the locked schema and start the single Worker deployment:
+
+```bash
+npx wrangler d1 migrations apply ria-noel-shop --local
+npm run dev
+```
+
+Open `http://localhost:8787`. The health endpoint is `GET /api/v1/health`; it returns `ok` only after both the D1 query and R2 probe succeed.
+
+`npm run dev` builds the Vite assets once, then serves them and the API together through Wrangler. Re-run it after frontend source changes.
+
+## Commands
+
+```bash
+npm run dev
+npm run build
+npm run lint
+npm run typecheck
+npm test
+```
+
+## Cloudflare resources and secrets
+
+Create one D1 database and one R2 bucket if they do not already exist:
+
+```bash
+npx wrangler d1 create ria-noel-shop
+npx wrangler r2 bucket create ria-noel-shop-files
+```
+
+Replace the placeholder `database_id` in `wrangler.jsonc` with the D1 ID returned by Cloudflare. Keep `config/wrangler.example.jsonc` as the binding reference.
+
+Set both required production secrets interactively; never put their values in source control:
+
+```bash
+npx wrangler secret put OPERATOR_PASSCODE
+npx wrangler secret put SESSION_SECRET
+```
+
+`OPERATOR_PASSCODE` is the unlock code used by the operator. `SESSION_SECRET` signs cookies and must be a random value of at least 32 characters. There are no required non-secret Wrangler variables in Milestone 0/1.
+
+Apply the migration remotely before the first deployment:
+
+```bash
+npx wrangler d1 migrations apply ria-noel-shop --remote
+npm run build
+npx wrangler deploy
+```
+
+## Authentication behavior
+
+There is no signup or role system. A correct unlock code produces a signed `HttpOnly`, `Secure`, `SameSite=Lax` cookie with a 30-day lifetime, so the normal browser/PWA reopen flow stays signed in. Logout expires it. Every `/api/v1/*` path except health and login passes through the session middleware; unauthenticated requests receive a JSON `401` response.

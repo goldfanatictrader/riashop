@@ -40,6 +40,10 @@ npm test
 git diff --numstat origin/main -- src/worker.ts src/app/App.tsx src/app/styles.css package.json
 git diff --stat origin/main -- src/worker.ts src/app/App.tsx src/app/styles.css package.json
 git diff --check
+git commit -m "Merge origin/main into invoice PDF PWA branch"
+git push origin ona/auto-invoice-pdf-pwa
+git commit -m "Document merge verification"
+git push origin ona/auto-invoice-pdf-pwa
 ```
 
 The Ona environment defined no repository one-shot tasks. Because Node/npm were not on `PATH`, checks used a temporary Node.js 22.23.2 archive under `/tmp`; its official SHA-256 verification passed and no runtime files were added to the repository.
@@ -51,6 +55,8 @@ The Ona environment defined no repository one-shot tasks. Because Node/npm were 
 - `npm run typecheck`: passed with no TypeScript errors.
 - `npm test`: passed; 6 test files and 28 tests.
 - `git diff --check`: passed after the final documentation update.
+- Merge commit and documentation commit pushes: passed.
+- GitHub PR #3 mergeability: confirmed `true` after the merge push; checked again after the final documentation push.
 
 ## Final diff of requested files against `origin/main`
 

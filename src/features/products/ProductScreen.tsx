@@ -3,12 +3,11 @@ import { createProduct, deactivateProduct, productImageUrl, updateProduct, uploa
 import type { Product } from "./types";
 import { useProducts } from "./useProducts";
 import { EmptyState, Icon, Skeleton } from "../../app/Icons";
-
-const rupiah = new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 });
+import { formatRupiah } from "../../shared/currency";
 
 export function ProductScreen({ onBack }: { onBack: () => void }) {
   const [search, setSearch] = useState("");
-  const { products, loading, error, reload } = useProducts({ search });
+  const { products, loading, loadingMore, error, nextCursor, reload, loadMore } = useProducts({ search });
   const [editing, setEditing] = useState<Product | null | undefined>(undefined);
   const [notice, setNotice] = useState("");
 
@@ -36,13 +35,14 @@ export function ProductScreen({ onBack }: { onBack: () => void }) {
       {!loading && !products.length && <EmptyState icon="box">Belum ada barang. Tambahkan barang agar bisa membuat nota.</EmptyState>}
       <div className="management-list">
         {products.map((product) => (
-          <article className={`management-card${product.isActive ? "" : " inactive"}`} key={product.id}>
+          <article className={`management-card product-row${product.isActive ? "" : " inactive"}`} key={product.id}>
             <div className="list-thumbnail">{productImageUrl(product) ? <img src={productImageUrl(product)!} alt="" loading="lazy" decoding="async" /> : <span aria-hidden="true">Tanpa foto</span>}</div>
-            <div><h2>{product.name}</h2><p>{product.variant || product.category || "Tanpa variasi"}</p><strong>{rupiah.format(product.priceRupiah)} / {product.unitLabel}</strong>{!product.isActive && <span className="status-label">Nonaktif</span>}</div>
+            <div className="product-row-info"><h2>{product.name}</h2><p>{product.variant || product.category || "Tanpa variasi"}</p><strong className="money-value">{formatRupiah(product.priceRupiah)}<span>/{product.unitLabel}</span></strong>{!product.isActive && <span className="status-label">Nonaktif</span>}</div>
             <div className="card-actions"><button type="button" onClick={() => setEditing(product)}>Edit</button>{product.isActive && <button className="danger-button" type="button" onClick={() => void deactivate(product)}>Nonaktifkan</button>}</div>
           </article>
         ))}
       </div>
+      {nextCursor && <div className="list-pagination"><button className="secondary-button" type="button" disabled={loadingMore} onClick={() => void loadMore()}>{loadingMore ? "Memuat barang…" : "Muat lebih banyak"}</button></div>}
     </main>
   );
 }

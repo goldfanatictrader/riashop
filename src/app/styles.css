@@ -525,7 +525,8 @@ textarea {
 }
 .management-card {
   display: grid;
-  grid-template-columns: 90px 1fr;
+  grid-template-columns: 90px minmax(0, 1fr);
+  align-items: start;
   gap: 16px;
   padding: 19px 2px;
   border-bottom: 1px solid var(--border);
@@ -545,6 +546,19 @@ textarea {
 .management-card strong {
   display: block;
   color: var(--primary-strong);
+}
+.product-row-info {
+  min-width: 0;
+  align-self: center;
+}
+.product-row-info p {
+  line-height: 1.35;
+}
+.product-row-info .money-value span {
+  margin-left: 4px;
+  color: var(--muted);
+  font-size: 0.88em;
+  font-weight: 700;
 }
 .list-thumbnail {
   width: 90px;
@@ -573,6 +587,19 @@ textarea {
   color: var(--danger);
   border-color: #e2b6b2;
 }
+.list-pagination {
+  display: flex;
+  justify-content: center;
+  padding: 22px 0 8px;
+}
+.list-pagination .secondary-button {
+  width: min(100%, 320px);
+  background: var(--surface);
+}
+.list-pagination .secondary-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
 .status-label {
   display: inline-block;
   margin-top: 8px;
@@ -582,8 +609,14 @@ textarea {
   font-size: 13px;
   font-weight: 800;
 }
-.customer-card {
+.management-card.customer-card {
   grid-template-columns: 1fr;
+  width: 100%;
+  gap: 14px;
+}
+.customer-card-info {
+  width: 100%;
+  min-width: 0;
 }
 .customer-card > div > span:not(.status-label) {
   display: block;
@@ -749,6 +782,27 @@ textarea {
 }
 .history-list > button > span:last-child {
   text-align: right;
+}
+.history-list > button {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+.history-copy {
+  min-width: 0;
+}
+.history-copy strong,
+.history-copy small {
+  overflow-wrap: anywhere;
+}
+.history-amount {
+  min-width: max-content;
+  align-self: center;
+  text-align: right;
+}
+.money-value {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 .form-section {
   margin: 0;
@@ -1157,9 +1211,28 @@ h3,
     grid-template-columns: 76px minmax(0, 1fr);
     gap: 12px;
   }
+  .management-card.customer-card {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 13px;
+    padding-inline: 0;
+  }
+  .customer-card .card-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+  .customer-card .card-actions button {
+    min-width: 0;
+    padding-inline: 8px;
+  }
   .list-thumbnail {
     width: 76px;
     height: 76px;
+  }
+  .product-row-info h2 {
+    margin-top: 0;
+  }
+  .product-row .card-actions {
+    margin-top: 2px;
   }
   .line-controls {
     align-items: flex-start;

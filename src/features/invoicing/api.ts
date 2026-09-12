@@ -1,4 +1,5 @@
 import type { FinalizedInvoice, InvoiceCustomer, InvoiceListItem, InvoiceProduct } from "./domain";
+import type { Page } from "../../shared/pagination";
 
 interface ErrorBody { error?: { message?: string } }
 interface ListBody { data?: unknown[]; meta?: { nextCursor?: string | null } }
@@ -74,10 +75,14 @@ export function finalizeInvoice(input: {
   }, "Koneksi terputus. Nota belum tersimpan.");
 }
 
-export async function listInvoices(search = ""): Promise<InvoiceListItem[]> {
-  const response = await fetch(`/api/v1/invoices?search=${encodeURIComponent(search)}`, { credentials: "include" });
+export async function listInvoices(options: { search?: string; cursor?: string } = {}): Promise<Page<InvoiceListItem>> {
+  const query = new URLSearchParams();
+  if (options.search) query.set("search", options.search);
+  if (options.cursor) query.set("cursor", options.cursor);
+  const response = await fetch(`/api/v1/invoices${query.size ? `?${query}` : ""}`, { credentials: "include" });
   if (!response.ok) throw new Error(await messageFrom(response, "Riwayat nota belum dapat dimuat."));
-  return ((await response.json()) as { data: InvoiceListItem[] }).data;
+  const body = await response.json() as { data: InvoiceListItem[]; meta?: { nextCursor?: string | null } };
+  return { items: body.data, nextCursor: body.meta?.nextCursor ?? null };
 }
 
 export function getInvoice(id: string) {

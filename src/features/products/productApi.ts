@@ -1,6 +1,7 @@
 import type { Product, ProductInput } from "./types";
+import type { Page } from "../../shared/pagination";
 
-interface ApiEnvelope<T> { data: T }
+interface ApiEnvelope<T> { data: T; meta?: { nextCursor?: string | null } }
 interface ErrorEnvelope { error?: { message?: string } }
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
@@ -12,12 +13,19 @@ async function api<T>(path: string, init?: RequestInit): Promise<T> {
   return ((await response.json()) as ApiEnvelope<T>).data;
 }
 
-export function listProducts(options: { search?: string; active?: boolean } = {}): Promise<Product[]> {
+export async function listProducts(options: { search?: string; active?: boolean; cursor?: string } = {}): Promise<Page<Product>> {
   const query = new URLSearchParams();
   if (options.search) query.set("search", options.search);
   if (options.active !== undefined) query.set("active", options.active ? "1" : "0");
+  if (options.cursor) query.set("cursor", options.cursor);
   const suffix = query.size ? `?${query}` : "";
-  return api<Product[]>(`/api/v1/products${suffix}`);
+  const response = await fetch(`/api/v1/products${suffix}`, { credentials: "include" });
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({})) as ErrorEnvelope;
+    throw new Error(body.error?.message ?? "Data barang belum dapat diproses. Coba lagi.");
+  }
+  const body = await response.json() as ApiEnvelope<Product[]>;
+  return { items: body.data, nextCursor: body.meta?.nextCursor ?? null };
 }
 
 export function createProduct(input: ProductInput): Promise<Product> {

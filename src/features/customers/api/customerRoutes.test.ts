@@ -8,7 +8,16 @@ function customerDatabase() {
   const rows: Row[] = [];
   const prepare = vi.fn((sql: string) => ({ bind: (...values: (string | number | null)[]) => ({
     first: async () => rows.find((row) => row.id === values[0]) ?? null,
-    all: async () => ({ results: sql.includes("is_active = ?") ? rows.filter((row) => row.is_active === values.at(-1)) : [...rows] }),
+    all: async () => {
+      const offset = Number(values.at(-1) ?? 0);
+      const active = sql.includes("is_active = ?") ? values.at(-2) : null;
+      const results = rows.filter((row) => active === null || row.is_active === active)
+        .sort((left, right) => Number(right.is_active) - Number(left.is_active)
+          || String(left.name).localeCompare(String(right.name), "id", { sensitivity: "base" })
+          || String(left.id).localeCompare(String(right.id)))
+        .slice(offset, offset + 51);
+      return { results };
+    },
     run: async () => {
       if (sql.includes("INSERT INTO customers")) {
         const [id, name, phone, address, note, created, updated] = values;
@@ -21,7 +30,7 @@ function customerDatabase() {
       return { success: true };
     },
   }) }));
-  return { database: { prepare } as unknown as D1Database };
+  return { database: { prepare } as unknown as D1Database, rows };
 }
 
 function environment(database: D1Database): Bindings {
@@ -63,5 +72,23 @@ describe("customerRoutes", () => {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: "Ibu Ria", whatsappNumber: "123" }),
     }, environment(database));
     expect(response.status).toBe(400);
+  });
+
+  it("membagi daftar customer per 50 baris dan menolak cursor invalid", async () => {
+    const { database, rows } = customerDatabase();
+    for (let index = 0; index < 52; index += 1) {
+      rows.push({ id: `customer-${String(index).padStart(2, "0")}`, name: `Customer ${String(index).padStart(2, "0")}`, whatsapp_number: null, address: null, note: null, is_active: 1, created_at: "2026-09-12", updated_at: "2026-09-12" });
+    }
+    const env = environment(database);
+    const first = await customerRoutes.request("https://test/", undefined, env);
+    const firstBody = await first.json() as { data: Array<{ name: string }>; meta: { nextCursor: string | null } };
+    expect(firstBody.data).toHaveLength(50);
+    expect(firstBody.data[0].name).toBe("Customer 00");
+    expect(firstBody.meta.nextCursor).toBe("50");
+    const second = await customerRoutes.request("https://test/?cursor=50", undefined, env);
+    const body = await second.json() as { data: unknown[]; meta: { nextCursor: string | null } };
+    expect(body.data).toHaveLength(2);
+    expect(body.meta.nextCursor).toBeNull();
+    expect((await customerRoutes.request("https://test/?cursor=-1", undefined, env)).status).toBe(400);
   });
 });

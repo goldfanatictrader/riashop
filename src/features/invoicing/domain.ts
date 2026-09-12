@@ -55,9 +55,7 @@ export interface InvoiceListItem {
   status: "finalized" | "cancelled";
 }
 
-export function formatRupiah(value: number): string {
-  return `Rp${Math.round(value).toLocaleString("id-ID")}`;
-}
+export { formatRupiah } from "../../shared/currency";
 
 const SMALL_NUMBERS = [
   "Nol", "Satu", "Dua", "Tiga", "Empat", "Lima", "Enam", "Tujuh", "Delapan", "Sembilan",

@@ -1,6 +1,8 @@
 import { FormEvent, useEffect, useState } from "react";
+import { CustomerScreen } from "../features/customers/CustomerScreen";
+import { ProductScreen } from "../features/products/ProductScreen";
 
-type View = "loading" | "login" | "home";
+type View = "loading" | "login" | "home" | "products" | "customers";
 
 interface ApiError {
   error?: { message?: string };
@@ -94,6 +96,9 @@ export function App() {
     }
   }
 
+  if (view === "products") return <ProductScreen onBack={() => setView("home")} />;
+  if (view === "customers") return <CustomerScreen onBack={() => setView("home")} />;
+
   if (view === "loading") {
     return <main className="centered"><p className="status" role="status">Membuka Ria Noel Shop…</p></main>;
   }
@@ -146,7 +151,7 @@ export function App() {
             key={action.key}
             className={`action-card${action.primary ? " action-card-primary" : ""}`}
             type="button"
-            onClick={() => setMessage(`${action.title} akan tersedia pada tahap berikutnya.`)}
+            onClick={() => action.key === "products" ? setView("products") : setMessage(`${action.title} akan tersedia pada tahap berikutnya.`)}
           >
             <span className="action-icon" aria-hidden="true">{action.icon}</span>
             <span className="action-copy">
@@ -157,6 +162,9 @@ export function App() {
           </button>
         ))}
       </section>
+      <button className="customer-menu-button" type="button" onClick={() => setView("customers")}>
+        <strong>Daftar Customer</strong><span>Kelola nama dan nomor WhatsApp</span>
+      </button>
       {message && <p className="notice" role="status">{message}</p>}
       <p className="help">Pilih salah satu menu di atas untuk mulai bekerja.</p>
     </main>

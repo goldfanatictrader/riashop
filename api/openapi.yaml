@@ -119,6 +119,30 @@ paths:
         - $ref: '#/components/parameters/Id'
       responses:
         '200': { description: Invoice cancelled }
+  /invoices/{id}/pdf:
+    post:
+      description: Archive a deterministic finalized-invoice PDF under a server-owned R2 key.
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/pdf:
+            schema: { type: string, format: binary }
+      responses:
+        '200': { description: PDF archived and invoice key registered }
+        '400': { description: Invalid or oversized PDF }
+    get:
+      description: Download an authorized archived PDF; clients regenerate from the snapshot when absent.
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: Archived invoice PDF
+          content:
+            application/pdf:
+              schema: { type: string, format: binary }
+        '404': { description: Invoice or archive not found }
 components:
   parameters:
     Id:

@@ -67,3 +67,18 @@
 **Status:** Chosen for Milestone 0
 **Decision:** `/api/v1/health` executes `SELECT 1` through D1 and a one-object R2 list probe before returning `status: ok`.
 **Reason:** A successful response proves both required bindings work instead of only proving that the Worker process started.
+
+## D-016 — Atomic D1 batch for invoice allocation
+**Status:** Chosen for Milestone 4
+**Decision:** Finalization increments `invoice_sequences`, inserts the invoice from that sequence row, and inserts item snapshots in one D1 batch transaction. Product values are selected again inside the batch, and the transaction aborts if its subtotal differs from server prevalidation.
+**Reason:** D1 does not expose a general interactive transaction API. Coupling allocation and persistence inside one transactional batch prevents a browser-generated/racing number and avoids a price/terbilang mismatch during concurrent product edits.
+
+## D-017 — Invoice-local compatibility selectors
+**Status:** Chosen for Milestone 4
+**Decision:** Until the independently owned product/customer UI lands, invoicing contains thin list/search selectors and one inline customer-create form. They only call the documented shared APIs and accept camelCase or snake_case response fields; they do not expose product/customer management.
+**Reason:** This keeps the invoice slice usable standalone without duplicating another agent's screens or data contract.
+
+## D-018 — Best-effort deterministic PDF archive
+**Status:** Chosen for Milestone 5
+**Decision:** The browser generates the PDF from the finalized snapshot, then attempts a server-mediated R2 archive. Archive failure never rolls back the finalized invoice; history can deterministically regenerate the file.
+**Reason:** This follows the locked failure policy while preserving a shareable local result during an R2/network problem.

@@ -1,76 +1,82 @@
-# Milestone 0 + Milestone 1 Report
+# Milestone 4 + Milestone 5 + Milestone 6 Report
 
 Date: 2026-09-12
 
+## Delivered
+
+- Server-authoritative invoice finalization, product/customer snapshots, fixed-rupiah discount and shipping, monthly `RNS-YYYYMM-NNNN` allocation, history/detail, cancellation, and duplicate-to-draft flow.
+- Thin invoice-local customer list/create and product selectors that consume the shared `/api/v1/customers` and `/api/v1/products` contracts without adding management screens.
+- Deterministic, text/vector A4 PDFs using `pdf-lib`, Indonesian rupiah and terbilang, long-name wrapping, repeated multi-page headers, in-app preview, native file share, download fallback, and optional authenticated R2 archive.
+- Installable PWA manifest with PNG icons, service-worker app-shell/static asset cache, local invoice-draft persistence, online/offline status, and Indonesian retry/error states.
+
 ## Files changed
 
-- Project/tooling: `package.json`, `package-lock.json`, `.gitignore`, `eslint.config.js`, `tsconfig.json`, `vite.config.ts`, `vitest.config.ts`, `index.html`.
-- Cloudflare foundation: `wrangler.jsonc`, `.dev.vars.example`, `migrations/0001_initial_schema.sql`.
-- Worker/API: `src/worker.ts`, `src/worker.test.ts`.
-- React UI: `src/main.tsx`, `src/app/App.tsx`, `src/app/styles.css`.
-- PWA/static assets: `public/manifest.webmanifest`, `public/_headers`, `public/icons/icon-192.svg`, `public/icons/icon-512.svg`, `public/icons/icon-maskable-512.svg`.
-- Documentation: `README.md`, `docs/15_DECISION_LOG.md`, `MILESTONE.md`.
+- Invoice feature/API/tests: `src/features/invoicing/Invoicing.tsx`, `api.ts`, `domain.ts`, `pdf.ts`, `server.ts`, and their unit/integration tests.
+- Worker and contracts: `src/worker.ts`, `api/openapi.yaml`.
+- Shell/PWA: `src/app/App.tsx`, `src/app/styles.css`, `src/main.tsx`, `public/sw.js`, `public/manifest.webmanifest`, `public/_headers`, and three PNG files under `public/icons/`.
+- Tooling/dependencies: `package.json`, `package-lock.json`, `tsconfig.json` (`pdf-lib` and Node test types).
+- Documentation/evidence: `docs/15_DECISION_LOG.md` and five mobile screenshots under `docs/screenshots/`.
 
-The pre-existing untracked `.devcontainer/` directory was inspected but not changed.
+Shared shell/security files were changed minimally to wire invoice navigation, register the service worker, show connectivity, and permit only `blob:` PDF frames. The pre-existing untracked `.devcontainer/` directory was not changed. The locked schema and migration were not changed.
 
 ## Commands executed
 
-The Ona environment had no repository task for build/test and no Node.js binary, so checks used a SHA-256-verified Node.js 22.23.2 distribution unpacked under `/tmp` without modifying the repository Dev Container.
+The Ona environment exposed no repository tasks and had no Node/npm binary. Checks therefore used the same temporary Node 22.23.2 distribution under `/tmp` as the preceding milestone; no Dev Container files were changed.
 
 ```bash
-curl -fsSL https://nodejs.org/dist/latest-v22.x/
-curl -fsSLO https://nodejs.org/dist/latest-v22.x/node-v22.23.2-linux-x64.tar.xz
-curl -fsSLO https://nodejs.org/dist/latest-v22.x/SHASUMS256.txt
-sha256sum --check --ignore-missing SHASUMS256.txt
-npm install react react-dom hono
-npm install --save-dev @cloudflare/workers-types @eslint/js @types/react @types/react-dom @vitejs/plugin-react eslint eslint-plugin-react-hooks eslint-plugin-react-refresh globals typescript typescript-eslint vite vitest wrangler
-npm prune
+npm install pdf-lib
+npm install --save-dev @types/node
 npm run lint
 npm run typecheck
 npm test
 npm run build
 npx wrangler deploy --dry-run
-npx wrangler d1 migrations apply ria-noel-shop --local
-npx wrangler dev --ip 0.0.0.0 --port 8787 --var OPERATOR_PASSCODE:<local-test-value> --var SESSION_SECRET:<local-test-value>
-cmp database/schema.sql migrations/0001_initial_schema.sql
-curl http://127.0.0.1:8787/api/v1/health
-curl http://127.0.0.1:8787/api/v1/auth/session
-curl -X POST http://127.0.0.1:8787/api/v1/auth/login
-curl -X POST http://127.0.0.1:8787/api/v1/auth/logout
 git diff --check
+npx wrangler d1 migrations apply ria-noel-shop --local
+npx wrangler d1 execute ria-noel-shop --local --command=<local reference seed>
+npx wrangler dev --ip 0.0.0.0 --port 8787 --var OPERATOR_PASSCODE:<local> --var SESSION_SECRET:<local>
+curl POST /api/v1/auth/login
+curl POST /api/v1/invoices/finalize
+gitpod environment port open 8787 --name ria-noel-shop --protocol http
+browser mobile navigation/snapshot/screenshot/evaluation commands
 ```
 
-The browser verification workflow also started Chromium, used a 390×844 viewport, opened the Ona preview port, inspected the accessibility snapshot, logged in, navigated to the same URL again, measured computed sizes, clicked the primary home action, and captured screenshots for local inspection.
+`sharp` was installed temporarily without saving to dependencies solely to rasterize the existing SVG app icons into required PNG sizes, then pruned.
 
-## Results
+## Automated results
 
-- `npm run lint`: passed with no warnings or errors.
-- `npm run typecheck`: passed with no TypeScript errors.
-- `npm test`: passed; 1 test file and 5 tests.
-- `npm run build`: passed; production assets generated successfully. Main JavaScript was 223.44 kB raw / 69.96 kB gzip.
-- `npx wrangler deploy --dry-run`: passed; Worker recognized D1 `DB`, R2 `FILES`, and static `ASSETS` bindings.
-- Local D1 migration: 15 statements applied successfully on first run; final run reported no pending migrations.
-- Locked schema comparison: passed; `migrations/0001_initial_schema.sql` matches `database/schema.sql` exactly.
-- `git diff --check`: passed.
+- `npm run lint`: passed, no warnings/errors.
+- `npm run typecheck`: passed, no TypeScript errors.
+- `npm test`: passed; 4 files, 19 tests. Node printed only its `node:sqlite` experimental warning.
+- Integration tests run against `database/schema.sql` in SQLite and verify the reference total/terbilang, sequential unique allocation, historical product/customer snapshots, and retained cancellation.
+- PDF tests verify byte-for-byte deterministic regeneration, `%PDF` output, sub-500KB reference output, required filename, and multi-page output for 60 lines.
+- `npm run build`: passed. Initial app JS is 246.15 kB raw / 75.65 kB gzip; lazy PDF JS is 423.71 kB raw / 176.86 kB gzip.
+- `npx wrangler deploy --dry-run`: passed with D1, R2, and static asset bindings recognized.
+- `git diff --check`: passed after final documentation cleanup.
 
-## Manual verification notes
+## Manual verification
 
-- `GET /api/v1/health` returned `200` with `{"data":{"status":"ok","database":"ok","storage":"ok"}}`, proving the request passed through the Worker and completed both binding probes.
-- Unauthenticated `GET /api/v1/auth/session` and an unknown protected API path returned `401` with Indonesian copy.
-- Correct login returned `200` and a 30-day `HttpOnly`, `Secure`, `SameSite=Lax` cookie. A following session request returned `200`; logout returned `204`; the same cookie was rejected afterward.
-- In Chromium at 390×844, login and home were readable without horizontal scrolling. Core body text computed to 17px. The logout target was 48px high; action targets were 104–138px high. `Buat Nota` was the largest, highest-contrast action.
-- Accessibility snapshot exposed the visible labels `Buat Nota`, `Daftar Barang`, and `Nota Sebelumnya`; decorative icon glyphs were hidden from assistive technology.
-- Reopening the same app URL after login returned directly to home, confirming browser-session persistence behavior.
-- PWA manifest and 192/512/maskable starter icons were served through the same deployment. API and static responses included the configured CSP, nosniff, referrer, and permissions headers.
+- Local authenticated API finalization returned `201`, `RNS-202609-0001`, two `Rp540.000` lines, `Rp1.080.000` total, and `Satu Juta Delapan Puluh Ribu Rupiah`.
+- At 390×844 Chromium, history reopened the finalized invoice with snapshot lines and totals. Duplicate created a populated editable draft with customer, both items, unit labels, quantity steppers, and total.
+- Computed UI sizes: body 17px, inputs 18–20px, smallest button 48px, and every quantity-stepper button 48px.
+- PDF preview initially exposed a CSP defect; after adding `frame-src 'self' blob:` to both Worker and static headers, preview opened with zero console errors.
+- Navigating editor → home → editor preserved the full draft. With Chromium forced offline, the offline banner appeared, the populated `Rp1.080.000` draft remained available, and finalization was blocked with a clear retry state. Restoring the connection retained the draft.
+- Service-worker check reported one active registration/controller, the `ria-noel-shell-v1` cache, and the linked manifest.
+
+Screenshots:
+
+- [Invoice editor](docs/screenshots/m4-editor-mobile.png)
+- [Invoice history](docs/screenshots/m4-history-mobile.png)
+- [PDF preview](docs/screenshots/m5-pdf-preview-mobile.png)
+- [Offline persisted draft](docs/screenshots/m6-offline-draft-mobile.png)
 
 ## Known limitations
 
-- This run intentionally stops at M0/M1. The three home actions are visible and announce that their flows arrive later; product CRUD, customer CRUD, invoice creation/history, PDF generation, sharing, and R2 uploads are not implemented.
-- The PWA icons are starter SVG artwork, not final approved brand exports. A service worker/offline app-shell cache belongs to Milestone 6 and is not included.
-- Login throttling is best-effort in Worker-isolate memory. It is not a globally durable counter; this tradeoff is recorded in `docs/15_DECISION_LOG.md`.
-- Visual verification used Chromium with a mobile viewport, not a physical Android device. The required real-device install and usability acceptance remains outstanding.
-- Remote Cloudflare resources were not created or mutated. Production deployment still requires a real D1 database ID, R2 bucket, secrets, remote migration, and deployment.
+- A real Android device was not available. The implementation takes the standards-based `navigator.canShare({files})` → `navigator.share({files})` route required for the Android share sheet, but final WhatsApp selection/attachment must still be accepted on physical Android hardware.
+- Full product/customer APIs and management UI are owned by the parallel milestones and are not present in this worktree. Invoice-local selectors are implemented against their documented endpoints; list/create interaction awaits those routes being merged. The reference editor was manually exercised through the history **Duplikat Nota** path and the invoice server API was exercised directly.
+- Headless Chromium's built-in PDF viewer showed the PDF but also displayed its browser-level password-save prompt in the captured preview screenshot; deterministic PDF parsing/render structure is additionally covered by automated tests.
+- Offline policy intentionally does not finalize or invent invoice numbers. Cached shell and drafts work during temporary loss; API-backed pickers/history still require connectivity.
 
 ## Next step
 
-Milestone 2: implement the product vertical slice (authenticated list/search, create/edit/deactivate, R2 image upload, and mobile product picker) without expanding beyond the locked V1 scope.
+Merge the independently owned product/customer API slices, run the complete create-through-picker flow, then perform the P0 Android install/native-share/WhatsApp acceptance and Milestone 7 accessibility/security hardening.

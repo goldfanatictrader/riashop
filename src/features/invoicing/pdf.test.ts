@@ -1,4 +1,5 @@
 import { decodePDFRawStream, PDFDocument, PDFRawStream } from "pdf-lib";
+import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
 import { describe, expect, it } from "vitest";
 import type { FinalizedInvoice } from "./domain";
 import { generateInvoicePdf, invoicePdfFilename } from "./pdf";
@@ -32,6 +33,18 @@ describe("PDF nota", () => {
   it("memecah daftar panjang ke beberapa halaman", async () => {
     const loaded = await PDFDocument.load(await generateInvoicePdf(invoice(60)));
     expect(loaded.getPageCount()).toBeGreaterThan(1);
+  });
+
+  it("dapat dibaca oleh pipeline pdf.js untuk pratinjau", async () => {
+    const task = getDocument({ data: await generateInvoicePdf(invoice()) });
+    const document = await task.promise;
+    const page = await document.getPage(1);
+    const viewport = page.getViewport({ scale: 1.66 });
+
+    expect(document.numPages).toBe(1);
+    expect(viewport.width).toBeGreaterThan(0);
+    expect(viewport.height).toBeGreaterThan(0);
+    await task.destroy();
   });
 
   it("menulis jumlah terbilang snapshot ke isi PDF", async () => {
